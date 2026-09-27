@@ -26,7 +26,7 @@ class GlobalTests(unittest.TestCase):
         self.assertEqual(global_path({"MVISER_GLOBAL": "/x/g.yaml"}, "linux"), Path("/x/g.yaml"))
         self.assertEqual(global_path({"APPDATA": "C:/AD"}, "win32"), Path("C:/AD/MViser/global.yaml"))
         self.assertEqual(global_path({"XDG_CONFIG_HOME": "/cfg"}, "linux"), Path("/cfg/mviser/global.yaml"))
-        self.assertTrue(str(global_path({}, "darwin")).endswith("MViser/global.yaml"))
+        self.assertEqual(global_path({}, "darwin").parts[-3:], ("Application Support", "MViser", "global.yaml"))
 
     def test_validation(self):
         self.assertEqual(validate_global(None), {})

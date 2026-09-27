@@ -137,6 +137,9 @@ def cmd_handoff(args) -> int:
 def cmd_audit(args: argparse.Namespace) -> int:
     from .audit import AuditContext, run_audit
 
+    for stream in (sys.stdout, sys.stderr):  # Windows consoles (cp1252/cp932) cannot print every summary char
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(errors="replace")
     ctx = AuditContext(Path(args.out), gui=args.gui)
     report = run_audit(ctx, only=args.only.split(",") if args.only else None, echo=print)
     return 1 if report["conclusion"].startswith("FAIL") else 0

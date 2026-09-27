@@ -339,7 +339,7 @@ class PreviewApp:
             doc = SettingsDocument(self.c.path, "project", global_doc)
         else:
             doc = SettingsDocument(global_path(), "global")
-        SettingsWindow(self.root, doc, on_saved=self.reload)
+        return SettingsWindow(self.root, doc, on_saved=self.reload)
 
     def open_lyric_editor(self) -> None:
         from .lyric_editor import LyricDocument, LyricEditError
@@ -352,8 +352,8 @@ class PreviewApp:
         except (LyricEditError, ValueError) as exc:
             self.status.configure(text=f"Subtitle editor: {exc}", foreground=self.colors["error"])
             return
-        LyricWindow(self.root, doc, current_frame=lambda: self.c.frame,
-                    seek=lambda f: self._nav(lambda: self.c.seek(f)), on_saved=self.reload)
+        return LyricWindow(self.root, doc, current_frame=lambda: self.c.frame,
+                           seek=lambda f: self._nav(lambda: self.c.seek(f)), on_saved=self.reload)
 
     def reload(self) -> None:
         if self.c.path:

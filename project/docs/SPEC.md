@@ -231,3 +231,10 @@ toggle, and Save writes only overridden keys (comments preserved via `ruamel.yam
 ## Non-goals (current)
 
 MViser#2 "Explicit MVP non-goals" に従う（音声からの採譜、機能和声、可変テンポ、GUI、ルビ描画・縦書き等）。
+
+## Automated audit (MViser#38)
+
+`run_mviser.py audit [--out DIR] [--only id,id] [--gui auto|on|off]` runs the `mviser.audit` checks (one per
+`manual_checks.yaml` id plus `av-sync`) against real renders, FFmpeg decodes and the real Tk app, and writes
+`audit_report.json` / `audit_summary.md` / evidence files. Exit 1 on FAIL. Rules and answer format:
+`REVIEW_PROTOCOL.md`, ADR 0005. CI workflow: `.github/workflows/mviser-audit.yml`.

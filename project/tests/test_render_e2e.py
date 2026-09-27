@@ -79,7 +79,10 @@ class RenderTests(unittest.TestCase):
             self.assertEqual(main(["inspect", str(self.tmp / "sample.mvproj.yaml")]), 0)
         data = json.loads(buf.getvalue())
         self.assertEqual(data["total_frames"], 427)
-        self.assertEqual([e["value"] for e in data["tracks"]["chord"]], ["Em", "C", "D", "Bm7/D"])
+        chords = data["tracks"]["chord"]
+        self.assertEqual([e["value"] for e in chords], ["Em", "C", "D", "v7"])
+        self.assertEqual([e["display"] for e in chords], ["Em", "C", "D", "Bm7"])
+        self.assertEqual([e["analysis"]["roman"] for e in chords], ["i", "VI", "VII", "v"])
         png = self.tmp / "f.png"
         with contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(main(["frame", str(self.tmp / "sample.mvproj.yaml"), "--time", "4.0", "-o", str(png)]), 0)

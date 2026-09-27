@@ -25,7 +25,9 @@ QUALITY_ALIASES = [
     ("maj", "major"),
 ]
 
-_SYMBOL_RE = re.compile(r"^([A-Ga-g])([#♯b♭]*)(.*?)(?:/([A-Ga-g][#♯b♭]*))?$")
+_SYMBOL_RE = re.compile(r"^([A-G])([#♯b♭]*)(.*?)(?:/([A-G][#♯b♭]*))?$")
+# What may follow a recognised quality: tensions like "9", "(b9,#11)", "add9", "omit5".
+_EXTENSION_RE = re.compile(r"^(?:[\d#b♯♭(),\s]|add|omit|no)*$")
 
 
 class ChordParseError(ValueError):
@@ -70,6 +72,8 @@ def parse_chord(symbol: str) -> Chord:
         if rest.startswith(alias):
             quality, extension = name, rest[len(alias):]
             break
+    if not _EXTENSION_RE.match(extension):
+        raise ChordParseError(f"unrecognised chord suffix {extension!r} in {symbol!r}")
     bass = bass_pc = None
     if bass_text:
         bass, bass_pc = _note(bass_text[0], bass_text[1:])

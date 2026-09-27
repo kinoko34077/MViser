@@ -109,6 +109,8 @@ def write_video(project: CompiledProject, out_path: Path | str, frame_range: Fra
     except BrokenPipeError:
         pass
     stderr = proc.stderr.read().decode(errors="replace") if proc.stderr else ""
+    if proc.stderr:
+        proc.stderr.close()
     if proc.wait() != 0:
         raise RuntimeError(f"ffmpeg failed ({proc.returncode}): {stderr.strip()}")
     return out_path

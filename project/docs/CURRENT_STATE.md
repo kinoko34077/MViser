@@ -6,12 +6,15 @@ Last verified: 2026-09-27 — MVP-0 (MViser#2) implemented on branch `claude/mvi
 
 - Repository Base 0.5.9 adopted (profile `cli`; CLI Default OVERRIDE, ci-test Default DISABLED).
 - MVP-0 pipeline: YAML → compile (measure:beat → frame) → SceneState → Pillow render → FFmpeg MP4 with audio / PNG sequence.
-- Chord symbol parser (major, minor, dim, dim7, aug, sus2, sus4, 6, 7, maj7, m7, m7b5, slash bass, preserved extensions).
+- Chord symbol parser (major, minor, dim, dim7, aug, sus2, sus4, 6, 7, maj7, m7, m7b5, slash bass, tensions).
+- Harmony layer (ADR 0002): `ChordSpec` in cents; mappers `symbol` / `degree` / `tones` (microtonal, JI, EDO) /
+  `pitch_set`; analyzers `pitch_classes` / `identify` (fail-open UNKNOWN) / `function` (roman, diatonic, function);
+  `project.key`, `harmony.display` (symbol / source / roman); μChordbot `.mcb` import.
 - Motion presets `cut` / `fade` / `slide`, beat-phase `pulse`, per-event override.
 - Automatic per-root chord colours with explicit overrides.
 - Lyric track (ruby parsed; base text only rendered).
 - CLI: `inspect`, `frame`, `render` (range `--start/--end`, `--frames`, `--no-audio`).
-- 29 unit / E2E tests covering all eight MViser#2 verification units.
+- 47 unit / E2E tests covering all eight MViser#2 verification units and the harmony layer.
 
 ## MViser#2 MVP-0 acceptance
 
@@ -24,12 +27,16 @@ SceneState-based background+label, enter animation, frame sequence, audio MP4, b
 - Fixed BPM, 4/4, single audio file; WAV duration auto-detected, other formats need `project.duration`.
 - Ruby / vertical text are not rendered yet.
 - KiNoTch. Runtime not integrated (see ADR 0001).
+- Function analysis is a first cut (no key detection, secondary dominants reported as chromatic).
+- "Music-dsl" repository not found; μChordbot DSL spec used as reference.
 
 ## Next work
 
 1. KiNoTch. review of the rendered sample look (colours, font sizes, motion feel).
-2. MVP-1: MIDI → pitch-class sets → chord candidates (UNKNOWN keeps raw notes).
-3. Then #1 Priority A/B items (ruby rendering, subtitle sets, GUI preview).
+2. MVP-1: MIDI source (`imports: format: midi`) → `pitch_set` events; the identify analyzer already provides
+   candidate / UNKNOWN resolution.
+3. Analysis-driven styling (e.g. colour or motion by `function`).
+4. Then #1 Priority A/B items (ruby rendering, subtitle sets, GUI preview).
 
 ## Verification
 

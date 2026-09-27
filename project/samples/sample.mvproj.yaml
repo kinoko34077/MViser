@@ -7,6 +7,7 @@ project:
   bpm: 135
   fps: 30
   resolution: [1280, 720]
+  key: "Em"               # enables degree notation (vi, V7, bVII...) and function analysis
   offset: 0.0
   duration: "9:1"        # 8 measures
 
@@ -21,6 +22,11 @@ style:
   lyric_font_size: 56
   chord_colors:
     Em: "#1F3A5F"
+
+harmony:
+  notation: auto           # symbol | degree | tones | pitch_set | auto
+  analyzers: [pitch_classes, identify, function]
+  display: symbol          # symbol | source | roman
 
 motion:
   enter: fade
@@ -37,7 +43,7 @@ chords:
     chord: D
     label: "D major"
   - at: "7:1"
-    chord: Bm7/D
+    chord: v7              # degree notation, relative to project.key -> Bm7
 
 lyrics:
   - at: "2:1"

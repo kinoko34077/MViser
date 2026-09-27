@@ -5,7 +5,8 @@ from __future__ import annotations
 import colorsys
 from dataclasses import dataclass
 
-from .chord_engine import Chord
+from .harmony import ChordSpec
+from .harmony.qualities import MINOR_LIKE
 from .motion import MotionState, enter, pulse
 from .project_data import CompiledProject
 
@@ -25,25 +26,35 @@ class SceneState:
     lyric_motion: MotionState = MotionState()
 
 
-def auto_chord_color(chord: Chord) -> str:
-    """Deterministic colour: hue from root pitch class, darker for minor-ish."""
-    hue = chord.root_pc / 12.0
-    lightness = 0.30 if chord.is_minor else 0.42
+def is_minor_like(spec: ChordSpec) -> bool:
+    quality = spec.quality or spec.analysis.get("identified", {}).get("quality")
+    return quality in MINOR_LIKE
+
+
+def auto_chord_color(spec: ChordSpec) -> str:
+    """Deterministic colour: hue from root cents (microtonal roots get in-between hues),
+    darker for minor-like qualities."""
+    hue = (spec.root_cents % 1200) / 1200.0
+    lightness = 0.30 if is_minor_like(spec) else 0.42
     r, g, b = colorsys.hls_to_rgb(hue, lightness, 0.55)
     return "#{:02X}{:02X}{:02X}".format(round(r * 255), round(g * 255), round(b * 255))
 
 
 def chord_background(project: CompiledProject, payload: dict) -> str:
     style = project.doc["style"]
-    chord: Chord = payload["chord"]
+    spec: ChordSpec = payload["chord"]
     if "color" in payload:
         return payload["color"]
     colors = style["chord_colors"]
-    for key in (chord.raw_symbol, chord.root + ({"minor": "m"}.get(chord.quality, "")), chord.root):
+    raw = payload["value"] if isinstance(payload["value"], str) else None
+    keys = [raw, spec.display, spec.root_name + ("m" if is_minor_like(spec) else ""), spec.root_name]
+    if "roman" in spec.analysis:
+        keys.insert(2, spec.analysis["roman"])
+    for key in keys:
         if key in colors:
             return colors[key]
     if style.get("auto_chord_colors", True):
-        return auto_chord_color(chord)
+        return auto_chord_color(spec)
     return style["background_color"]
 
 
@@ -67,7 +78,7 @@ def resolve_scene_state(project: CompiledProject, frame: int) -> SceneState:
         local = tempo.frame_to_seconds(chord_event.local_frame(frame))
         state.update(
             background_color=chord_background(project, payload),
-            chord_label=payload.get("label", payload["value"]),
+            chord_label=payload.get("label", payload["display"]),
             chord_progress=chord_event.progress(frame),
             chord_motion=enter(payload.get("motion", motion["enter"]), local, float(motion["enter_duration"])),
             chord_scale=pulse(phase, float(motion["pulse"])),

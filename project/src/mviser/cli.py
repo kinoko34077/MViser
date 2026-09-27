@@ -19,6 +19,16 @@ def _progress(done: int, total: int) -> None:
         print(f"\r[mviser] {done}/{total} frames", end="\n" if done == total else "", file=sys.stderr, flush=True)
 
 
+def _event_json(event) -> dict:
+    out = {"start_frame": event.start_frame, "end_frame": event.end_frame, "value": event.payload["value"]}
+    spec = event.payload.get("chord")
+    if spec is not None:
+        out.update(display=event.payload["display"], root=spec.root_name, quality=spec.quality,
+                   tones_cents=[round(t.cents, 3) for t in spec.tones], notation=spec.source.get("notation"),
+                   analysis=spec.analysis)
+    return out
+
+
 def cmd_inspect(args) -> int:
     project = load_project(args.project)
     out = {
@@ -28,8 +38,7 @@ def cmd_inspect(args) -> int:
         "total_frames": project.total_frames,
         "tracks": {
             name: [
-                {"start_frame": e.start_frame, "end_frame": e.end_frame, "value": e.payload["value"]}
-                for e in track.events
+                _event_json(e) for e in track.events
             ]
             for name, track in project.tracks.items()
         },

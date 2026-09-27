@@ -10,7 +10,8 @@ from typing import Any
 
 import yaml
 
-from .chord_engine import Chord, ChordParseError, parse_chord
+from .harmony import ChordSpec, HarmonyContext, MappingError, default_registry
+from .harmony.sources import IMPORTERS, SourceError
 from .motion import PRESETS
 from .ruby import strip_ruby
 from .timeline import BEATS_PER_MEASURE, Tempo, TimelineError, Track, build_track
@@ -21,6 +22,7 @@ EVENT_TYPES = ("chord", "lyric")
 DEFAULTS: dict[str, Any] = {
     "project": {
         "title": "Untitled",
+        "key": None,
         "bpm": 120,
         "fps": 30,
         "resolution": [1920, 1080],
@@ -38,7 +40,13 @@ DEFAULTS: dict[str, Any] = {
         "auto_chord_colors": True,
     },
     "motion": {"enter": "fade", "enter_duration": 0.2, "pulse": 0.04},
+    "harmony": {
+        "notation": "auto",          # auto | symbol | degree | tones | pitch_set | <registered mapper>
+        "analyzers": ["pitch_classes", "identify", "function"],
+        "display": "symbol",         # symbol | source | roman
+    },
 }
+DISPLAY_MODES = ("symbol", "source", "roman")
 
 
 class ProjectError(ValueError):
@@ -66,14 +74,14 @@ def _check_color(value: Any, where: str) -> str:
     return text
 
 
-def normalize(raw: dict[str, Any]) -> dict[str, Any]:
+def normalize(raw: dict[str, Any], base_dir: Path | str = ".") -> dict[str, Any]:
     """Validate a raw document and fill defaults. Returns a new dict."""
     if not isinstance(raw, dict):
         raise ProjectError("project file must be a mapping")
     version = raw.get("schema_version", SCHEMA_VERSION)
     if version != SCHEMA_VERSION:
         raise ProjectError(f"unsupported schema_version: {version}")
-    known = set(DEFAULTS) | {"schema_version", "events", "chords", "lyrics"}
+    known = set(DEFAULTS) | {"schema_version", "events", "chords", "lyrics", "imports"}
     unknown = set(raw) - known
     if unknown:
         raise ProjectError(f"unknown top-level keys: {sorted(unknown)}")
@@ -97,6 +105,8 @@ def normalize(raw: dict[str, Any]) -> dict[str, Any]:
     for name, color in style["chord_colors"].items():
         style["chord_colors"][name] = _check_color(color, f"style.chord_colors.{name}")
 
+    if doc["harmony"]["display"] not in DISPLAY_MODES:
+        raise ProjectError(f"harmony.display must be one of {DISPLAY_MODES}")
     motion = doc["motion"]
     if motion["enter"] not in PRESETS:
         raise ProjectError(f"motion.enter must be one of {PRESETS}")
@@ -107,6 +117,21 @@ def normalize(raw: dict[str, Any]) -> dict[str, Any]:
         events.append({"type": "chord", **{k: v for k, v in item.items() if k != "chord"}, "value": item.get("chord", item.get("value"))})
     for item in doc.pop("lyrics", None) or []:
         events.append({"type": "lyric", **{k: v for k, v in item.items() if k != "text"}, "value": item.get("text", item.get("value"))})
+    for j, spec in enumerate(doc.get("imports") or []):
+        fmt = spec.get("format") if isinstance(spec, dict) else None
+        if fmt not in IMPORTERS or not spec.get("path"):
+            raise ProjectError(f"imports[{j}]: needs format {sorted(IMPORTERS)} and path")
+        try:
+            start = Tempo(float(doc["project"]["bpm"]), int(doc["project"]["fps"])).to_seconds(spec.get("at", "1:1"))
+            start_beat = start / (60.0 / float(doc["project"]["bpm"]))
+            imported = IMPORTERS[fmt](Path(base_dir) / spec["path"], start_beat)
+        except (SourceError, TimelineError) as exc:
+            raise ProjectError(f"imports[{j}]: {exc}") from exc
+        for event in imported:
+            hint = event.pop("label_hint", None)
+            if spec.get("use_names") and hint:
+                event["value"]["name"] = hint
+        events.extend(imported)
     for i, event in enumerate(events):
         if not isinstance(event, dict) or "at" not in event or event.get("value") in (None, ""):
             raise ProjectError(f"events[{i}]: requires 'at' and 'value'")
@@ -114,6 +139,10 @@ def normalize(raw: dict[str, Any]) -> dict[str, Any]:
             raise ProjectError(f"events[{i}]: type must be one of {EVENT_TYPES}")
         if "color" in event:
             event["color"] = _check_color(event["color"], f"events[{i}].color")
+        if "notation" in event and event["type"] != "chord":
+            raise ProjectError(f"events[{i}]: notation applies to chord events only")
+        if event["type"] == "lyric" and not isinstance(event["value"], str):
+            raise ProjectError(f"events[{i}]: lyric value must be text")
         if "motion" in event and event["motion"] not in PRESETS:
             raise ProjectError(f"events[{i}]: motion must be one of {PRESETS}")
     doc["events"] = events
@@ -127,6 +156,7 @@ class CompiledProject:
     tempo: Tempo
     total_frames: int
     tracks: dict[str, Track]
+    harmony_context: HarmonyContext | None = None
 
     @property
     def fps(self) -> int:
@@ -167,6 +197,13 @@ def compile_project(doc: dict[str, Any], base_dir: Path | str = ".") -> Compiled
     except TimelineError as exc:
         raise ProjectError(str(exc)) from exc
 
+    try:
+        context = HarmonyContext.from_key(project.get("key"))
+    except MappingError as exc:
+        raise ProjectError(f"project.key: {exc}") from exc
+    harmony = doc["harmony"]
+    registry = default_registry()
+
     starts: dict[str, list[tuple[int, dict[str, Any]]]] = {t: [] for t in EVENT_TYPES}
     last_start = 0.0
     for i, event in enumerate(doc["events"]):
@@ -175,7 +212,7 @@ def compile_project(doc: dict[str, Any], base_dir: Path | str = ".") -> Compiled
         except (TimelineError, KeyError, TypeError, ValueError) as exc:
             raise ProjectError(f"events[{i}].at: {exc}") from exc
         last_start = max(last_start, seconds)
-        payload: dict[str, Any] = {"value": str(event["value"]), "seconds": seconds}
+        payload: dict[str, Any] = {"value": event["value"], "seconds": seconds}
         for key in ("label", "color", "motion"):
             if key in event:
                 payload[key] = event[key]
@@ -183,9 +220,12 @@ def compile_project(doc: dict[str, Any], base_dir: Path | str = ".") -> Compiled
             payload["duration_frames"] = tempo.seconds_to_frame(tempo.to_seconds(event["duration"]))
         if event["type"] == "chord":
             try:
-                payload["chord"] = parse_chord(event["value"])
-            except ChordParseError as exc:
+                spec = registry.resolve(event["value"], context, event.get("notation", harmony["notation"]),
+                                        harmony["analyzers"])
+            except MappingError as exc:
                 raise ProjectError(f"events[{i}]: {exc}") from exc
+            payload["chord"] = spec
+            payload["display"] = chord_display(spec, event["value"], harmony["display"])
         else:
             payload["text"] = strip_ruby(str(event["value"]))
         starts[event["type"]].append((tempo.seconds_to_frame(seconds), payload))
@@ -202,7 +242,7 @@ def compile_project(doc: dict[str, Any], base_dir: Path | str = ".") -> Compiled
             seconds_total = last_start + BEATS_PER_MEASURE * tempo.beat_sec
     total_frames = max(tempo.seconds_to_frame(seconds_total), 1)
     tracks = {t: build_track(t, s, total_frames) for t, s in starts.items()}
-    return CompiledProject(doc, base_dir, tempo, total_frames, tracks)
+    return CompiledProject(doc, base_dir, tempo, total_frames, tracks, context)
 
 
 def load_project(path: Path | str) -> CompiledProject:
@@ -211,12 +251,16 @@ def load_project(path: Path | str) -> CompiledProject:
         raw = yaml.safe_load(path.read_text(encoding="utf-8"))
     except yaml.YAMLError as exc:
         raise ProjectError(f"{path}: invalid YAML: {exc}") from exc
-    return compile_project(normalize(raw or {}), path.parent)
+    return compile_project(normalize(raw or {}, path.parent), path.parent)
 
 
 def save_project(doc: dict[str, Any], path: Path | str) -> None:
     Path(path).write_text(yaml.safe_dump(doc, allow_unicode=True, sort_keys=False), encoding="utf-8")
 
 
-def chord_of(payload: dict[str, Any]) -> Chord:
-    return payload["chord"]
+def chord_display(spec: ChordSpec, raw: Any, mode: str) -> str:
+    if mode == "source" and isinstance(raw, str):
+        return raw
+    if mode == "roman" and "roman" in spec.analysis:
+        return spec.analysis["roman"]
+    return spec.display

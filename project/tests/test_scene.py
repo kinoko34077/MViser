@@ -1,11 +1,15 @@
 import unittest
 
 import _path  # noqa: F401
-from mviser.chord_engine import parse_chord
+from mviser.harmony import HarmonyContext, default_registry
 from mviser.motion import enter, pulse
 from mviser.project_data import ProjectError, compile_project, normalize
 from mviser.ruby import parse_ruby, strip_ruby
 from mviser.scene import auto_chord_color, resolve_scene_state
+
+
+def parse_chord(value):
+    return default_registry().resolve(value, HarmonyContext())
 
 
 def make(**overrides):

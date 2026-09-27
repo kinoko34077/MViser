@@ -1,0 +1,5 @@
+{
+  "profile": "minimal",
+  "description": "最小構成。Core/Application + testsを想定。",
+  "surfaces": {}
+}

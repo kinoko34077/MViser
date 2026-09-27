@@ -1,0 +1,5 @@
+# Project-local additions belong here.
+__pycache__/
+*.pyc
+output/
+samples/*.wav

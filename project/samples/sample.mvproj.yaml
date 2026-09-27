@@ -1,0 +1,46 @@
+# MViser MVP-0 sample project (schema_version 1). See project/docs/SPEC.md.
+# Audio: generate with `python project/tools/make_click_wav.py project/samples/click.wav 135 16`
+schema_version: 1
+
+project:
+  title: "MViser sample"
+  bpm: 135
+  fps: 30
+  resolution: [1280, 720]
+  offset: 0.0
+  duration: "9:1"        # 8 measures
+
+audio:
+  path: click.wav
+  start: 0.0
+
+style:
+  background_color: "#000000"
+  text_color: "#FFFFFF"
+  chord_font_size: 160
+  lyric_font_size: 56
+  chord_colors:
+    Em: "#1F3A5F"
+
+motion:
+  enter: fade
+  enter_duration: 0.2
+  pulse: 0.04
+
+chords:
+  - at: "1:1"
+    chord: Em
+  - at: "3:1"
+    chord: C
+    motion: slide
+  - at: "5:1"
+    chord: D
+    label: "D major"
+  - at: "7:1"
+    chord: Bm7/D
+
+lyrics:
+  - at: "2:1"
+    text: "焦《こ》がれ"
+  - at: "5:1"
+    text: "夢《ゆめ》の中"

@@ -1,0 +1,33 @@
+name: Verify
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            shell: pwsh
+          - os: windows-latest
+            shell: pwsh
+          - os: windows-latest
+            shell: powershell
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Base / project diagnostics
+        run: ./.kinotch/scripts/knt.ps1 doctor
+      - name: Project setup
+        run: ./.kinotch/scripts/knt.ps1 setup
+      - name: Project verification
+        run: ./.kinotch/scripts/knt.ps1 verify

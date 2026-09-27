@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "packs": {
+    "cli": {
+      "state": "OVERRIDE",
+      "source_base_version": "0.5.9",
+      "materialized_files": []
+    },
+    "ci-test": {
+      "state": "DISABLED",
+      "source_base_version": "0.5.9",
+      "materialized_files": []
+    }
+  }
+}

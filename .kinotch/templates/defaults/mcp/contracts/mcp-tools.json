@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "kind": "kinotch-mcp-default-boundary",
+  "tool_name_pattern": "^[a-z][a-z0-9_.-]*$",
+  "input_schema": "Project-owned JSON Schema or host-native schema",
+  "input_schema_validation": true,
+  "working_directory": "Resolve relative file and directory arguments from the Project working directory.",
+  "working_directory_normalization": true,
+  "resource_path_resolution": true,
+  "error_conversion": true,
+  "structured_diagnostics": true,
+  "version_capabilities": true,
+  "diagnostics": [
+    "version",
+    "health",
+    "capabilities"
+  ],
+  "dispatch": {
+    "use_existing_framework": true,
+    "registry": "host-owned",
+    "description": "Use the existing MCP host or framework dispatch; do not add a second Action Registry."
+  }
+}

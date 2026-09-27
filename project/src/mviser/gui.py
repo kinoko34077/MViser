@@ -37,7 +37,7 @@ class PreviewApp:
         self._audio_clock = False
         self._note = ""
         self.recent = prune_missing(load_recent())
-        prefs = load_prefs()
+        prefs = self.prefs = load_prefs()
         self.show_guides = tk.BooleanVar(value=prefs["guides"])
         self.chord_colors = tk.BooleanVar(value=prefs["chord_colors"])
         self.c.chord_colors = prefs["chord_colors"]
@@ -52,6 +52,7 @@ class PreviewApp:
         self._bind_keys()
         self._remember(self.c.path)
         self._rebuild_view_menu()  # also fixes the View menu being empty until the first reload
+        self._refresh_side_panel()
         self._load_audio()
         self.refresh()
         root.after(POLL_MS, self._poll_file)
@@ -86,16 +87,23 @@ class PreviewApp:
         self.root.config(menu=menu)
 
     def _build_body(self) -> None:
-        self.canvas = tk.Canvas(self.root, background=palette("dark")["canvas"], highlightthickness=0)
+        self.status = ttk.Label(self.root, padding=(6, 2), anchor="w", foreground=self.colors["error"])
+        self.status.pack(side="bottom", fill="x")
+        self.paned = ttk.PanedWindow(self.root, orient="horizontal")
+        self.paned.pack(fill="both", expand=True)
+        left = ttk.Frame(self.paned)
+        self.paned.add(left, weight=1)
+
+        self.canvas = tk.Canvas(left, background=palette("dark")["canvas"], highlightthickness=0)
         self.canvas.pack(fill="both", expand=True)
         self.canvas.bind("<Configure>", lambda _e: self.refresh())
 
-        self.timeline = tk.Canvas(self.root, height=TIMELINE_HEIGHT, background="#111111", highlightthickness=0)
+        self.timeline = tk.Canvas(left, height=TIMELINE_HEIGHT, background="#111111", highlightthickness=0)
         self.timeline.pack(fill="x")
         self.timeline.bind("<Button-1>", self._on_timeline)
         self.timeline.bind("<B1-Motion>", self._on_timeline)
 
-        bar = ttk.Frame(self.root, padding=4)
+        bar = ttk.Frame(left, padding=4)
         bar.pack(fill="x")
         ttk.Button(bar, text="⏮", width=3, command=lambda: self._nav(self.c.prev_chord)).pack(side="left")
         self.play_btn = ttk.Button(bar, text="▶", width=3, command=self.toggle_play)
@@ -104,27 +112,109 @@ class PreviewApp:
         self.slider = ttk.Scale(bar, from_=0, to=max(self.c.total_frames - 1, 1), orient="horizontal",
                                 command=lambda v: self._nav(lambda: self.c.seek(round(float(v))), from_slider=True))
         self.slider.pack(side="left", fill="x", expand=True, padx=8)
-        self.info = ttk.Label(bar, width=60, anchor="w")
+        self.info = ttk.Label(bar, width=48, anchor="w")
         self.info.pack(side="left")
-        self.status = ttk.Label(self.root, padding=(6, 2), anchor="w", foreground=self.colors["error"])
-        self.status.pack(fill="x")
+        self._build_side_panel()
+
+    # -- docked side panel (MViser#33) --------------------------------------------
+    def _build_side_panel(self) -> None:
+        from .lyric_window import LyricPanel
+
+        self.side = ttk.Notebook(self.paned, width=self.prefs["side_width"])
+        self.lyric_panel = LyricPanel(self.side, None, current_frame=lambda: self.c.frame,
+                                      seek=lambda f: self._nav(lambda: self.c.seek(f)), on_saved=self.reload,
+                                      compact=True)
+        self.side.add(self.lyric_panel.top, text="Subtitles")
+        chords = ttk.Frame(self.side)
+        self.chord_tree = ttk.Treeview(chords, columns=("time", "chord", "roman", "function"), show="headings",
+                                       selectmode="browse")
+        for col, width in (("time", 70), ("chord", 70), ("roman", 50), ("function", 110)):
+            self.chord_tree.heading(col, text=col)
+            self.chord_tree.column(col, width=width, stretch=col == "function")
+        self.chord_tree.pack(fill="both", expand=True, padx=4, pady=4)
+        self.chord_tree.bind("<Double-1>", self._on_chord_row)
+        self.side.add(chords, text="Chords")
+        self._chord_rows: list[dict] = []
+        self._chord_current: int | None = None
+        self.side_visible = tk.BooleanVar(value=self.prefs["side_panel"])
+        if self.side_visible.get():
+            self.paned.add(self.side, weight=0)
+        self.root.protocol("WM_DELETE_WINDOW", self._on_close)
+
+    def toggle_side_panel(self) -> None:
+        if self.side_visible.get():
+            self.paned.add(self.side, weight=0)
+        else:
+            self._remember_side_width()
+            self.paned.forget(self.side)
+        self._prefs_changed()
+
+    def _remember_side_width(self) -> None:
+        if str(self.side) in self.paned.panes():
+            self.prefs["side_width"] = max(160, min(1200, self.side.winfo_width() or self.prefs["side_width"]))
+
+    def _on_close(self) -> None:
+        self._remember_side_width()
+        self._prefs_changed(refresh=False)
+        self.audio.stop()
+        self.root.destroy()
+
+    def _refresh_side_panel(self) -> None:
+        from .chord_list import chord_rows
+        from .lyric_editor import LyricDocument, LyricEditError
+
+        doc, message = None, ""
+        if self.c.path:
+            try:
+                doc = LyricDocument(self.c.path, self.c.subtitle_set, load_global())
+            except (LyricEditError, ValueError) as exc:
+                message = str(exc)
+        self.lyric_panel.set_doc(doc, message)
+        self.chord_tree.delete(*self.chord_tree.get_children())
+        self._chord_rows = chord_rows(self.c.project, self.time_mode.get()) if self.c.project else []
+        for i, row in enumerate(self._chord_rows):
+            self.chord_tree.insert("", "end", iid=str(i), values=(row["time"], row["display"], row["roman"],
+                                                                  row["function"]))
+        self._chord_current = None
+
+    def _on_chord_row(self, _event=None) -> None:
+        sel = self.chord_tree.selection()
+        if sel:
+            self._nav(lambda: self.c.seek(self._chord_rows[int(sel[0])]["frame"]))
+
+    def _highlight_chord(self) -> None:
+        from .chord_list import current_row
+
+        index = current_row(self._chord_rows, self.c.frame)
+        if index != self._chord_current and index is not None:
+            self.chord_tree.selection_set(str(index))
+            self.chord_tree.see(str(index))
+        self._chord_current = index
 
     def _bind_keys(self) -> None:
         r = self.root
-        r.bind("<space>", lambda _e: self.toggle_play())
-        r.bind("<Left>", lambda _e: self._nav(lambda: self.c.step(-1)))
-        r.bind("<Right>", lambda _e: self._nav(lambda: self.c.step(1)))
-        r.bind("<Shift-Left>", lambda _e: self._nav(lambda: self.c.step(-self.c.fps)))
-        r.bind("<Shift-Right>", lambda _e: self._nav(lambda: self.c.step(self.c.fps)))
-        r.bind("<Up>", lambda _e: self._nav(self.c.prev_chord))
-        r.bind("<Down>", lambda _e: self._nav(self.c.next_chord))
-        r.bind("<Home>", lambda _e: self._nav(lambda: self.c.seek(0)))
-        r.bind("<F5>", lambda _e: self.reload())
-        r.bind("<Control-o>", lambda _e: self.open_dialog())
-        r.bind("<Control-l>", lambda _e: self.open_lyric_editor())
-        r.bind("m", lambda _e: self.toggle_mute())
-        r.bind("g", lambda _e: (self.show_guides.set(not self.show_guides.get()), self._prefs_changed()))
+        r.bind("<space>", self._key(lambda _e: self.toggle_play()))
+        r.bind("<Left>", self._key(lambda _e: self._nav(lambda: self.c.step(-1))))
+        r.bind("<Right>", self._key(lambda _e: self._nav(lambda: self.c.step(1))))
+        r.bind("<Shift-Left>", self._key(lambda _e: self._nav(lambda: self.c.step(-self.c.fps))))
+        r.bind("<Shift-Right>", self._key(lambda _e: self._nav(lambda: self.c.step(self.c.fps))))
+        r.bind("<Up>", self._key(lambda _e: self._nav(self.c.prev_chord)))
+        r.bind("<Down>", self._key(lambda _e: self._nav(self.c.next_chord)))
+        r.bind("<Home>", self._key(lambda _e: self._nav(lambda: self.c.seek(0))))
+        r.bind("<F5>", self._key(lambda _e: self.reload()))
+        r.bind("<Control-o>", self._key(lambda _e: self.open_dialog()))
+        r.bind("<Control-l>", self._key(lambda _e: self.open_lyric_editor()))
+        r.bind("<F9>", self._key(lambda _e: (self.side_visible.set(not self.side_visible.get()), self.toggle_side_panel())))
+        r.bind("m", self._key(lambda _e: self.toggle_mute()))
+        r.bind("g", self._key(lambda _e: (self.show_guides.set(not self.show_guides.get()), self._prefs_changed())))
 
+    def _key(self, handler):
+        """Ignore global shortcuts while the user types in a text field (docked subtitle editor)."""
+        def wrapped(event):
+            if isinstance(event.widget, (tk.Entry, ttk.Entry, ttk.Combobox, tk.Text, ttk.Treeview)):
+                return None
+            return handler(event)
+        return wrapped
     def _remember(self, path) -> None:
         if path:
             self.recent = update_recent(self.recent, path)
@@ -154,6 +244,8 @@ class PreviewApp:
         self.view_menu.delete(0, "end")
         self.view_menu.add_checkbutton(label="Chord colours", variable=self.chord_colors,
                                        command=self._toggle_chord_colors)
+        self.view_menu.add_checkbutton(label="Side panel", accelerator="F9", variable=self.side_visible,
+                                       command=self.toggle_side_panel)
         self.view_menu.add_checkbutton(label="Guidelines", accelerator="G", variable=self.show_guides,
                                        command=self.refresh)
         for mode in TIME_MODES:
@@ -185,10 +277,13 @@ class PreviewApp:
         error = self.audio.load(project.audio_path, project.audio_start, project.fps)
         self._note = error or self.audio.message or ""
 
-    def _prefs_changed(self) -> None:
-        save_prefs({"theme": self.theme.get(), "time_mode": self.time_mode.get(),
-                    "guides": self.show_guides.get(), "chord_colors": self.chord_colors.get()})
-        self.refresh()
+    def _prefs_changed(self, refresh: bool = True) -> None:
+        self.prefs.update(theme=self.theme.get(), time_mode=self.time_mode.get(), guides=self.show_guides.get(),
+                          chord_colors=self.chord_colors.get(), side_panel=self.side_visible.get())
+        save_prefs(self.prefs)
+        if refresh:
+            self._refresh_side_panel()
+            self.refresh()
 
     def _set_theme(self) -> None:
         self.colors = apply_theme(self.root, self.theme.get())
@@ -220,6 +315,7 @@ class PreviewApp:
         self._load_audio()
         self.slider.configure(to=max(self.c.total_frames - 1, 1))
         self._rebuild_view_menu()
+        self._refresh_side_panel()
         self.refresh()
         if error:
             self.status.configure(text=f"Load error (showing last good project): {error}")
@@ -348,6 +444,8 @@ class PreviewApp:
         else:
             self.canvas.create_text(w // 2, h // 2, text="File → Open… (.mvproj.yaml)", fill="#aaaaaa")
         self._draw_timeline()
+        if hasattr(self, "chord_tree"):
+            self._highlight_chord()
         r = self.c.readout()
         chord = f"{r['chord']} ({r['roman']})" if r["roman"] else r["chord"]
         if self.c.project:

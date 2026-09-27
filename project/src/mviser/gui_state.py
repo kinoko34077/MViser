@@ -45,7 +45,8 @@ def save_recent(recent: list[str], path: Path | None = None) -> None:
 
 
 # -- preferences (MViser#31) ------------------------------------------------------
-PREF_DEFAULTS = {"theme": "light", "time_mode": "absolute", "guides": False, "chord_colors": True}
+PREF_DEFAULTS = {"theme": "light", "time_mode": "absolute", "guides": False, "chord_colors": True,
+                 "side_panel": True, "side_width": 320}
 PREF_CHOICES = {"theme": ("light", "dark"), "time_mode": ("absolute", "tempo", "frames")}
 
 
@@ -62,6 +63,9 @@ def validate_prefs(data) -> dict:
         if key in PREF_CHOICES and value not in PREF_CHOICES[key]:
             continue
         if isinstance(default, bool) and not isinstance(value, bool):
+            continue
+        if isinstance(default, int) and not isinstance(default, bool) and (
+                isinstance(value, bool) or not isinstance(value, int) or not 160 <= value <= 1200):
             continue
         prefs[key] = value
     return prefs

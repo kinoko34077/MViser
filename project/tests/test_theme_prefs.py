@@ -12,8 +12,12 @@ class PrefsTests(unittest.TestCase):
         path = Path(tempfile.mkdtemp()) / "p" / "gui_prefs.json"
         self.assertEqual(load_prefs(path), PREF_DEFAULTS)
         save_prefs({"theme": "dark", "time_mode": "tempo", "guides": True, "chord_colors": False}, path)
-        self.assertEqual(load_prefs(path), {"theme": "dark", "time_mode": "tempo", "guides": True,
+        self.assertEqual(load_prefs(path), {**PREF_DEFAULTS, "theme": "dark", "time_mode": "tempo", "guides": True,
                                             "chord_colors": False})
+        self.assertEqual(validate_prefs({"side_panel": False, "side_width": 400})["side_width"], 400)
+        self.assertFalse(validate_prefs({"side_panel": False})["side_panel"])
+        for bad in (5, 99999, True, "300"):
+            self.assertEqual(validate_prefs({"side_width": bad})["side_width"], PREF_DEFAULTS["side_width"])
         bad = validate_prefs({"theme": "neon", "time_mode": 3, "guides": "yes", "extra": 1})
         self.assertEqual(bad, PREF_DEFAULTS)
         path.write_text("{broken", encoding="utf-8")

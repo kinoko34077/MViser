@@ -177,6 +177,14 @@ files pruned); View → Chord colours (preview-only: background falls back to `s
 exports unchanged); View → Guidelines / `G` (centre cross, rule of thirds, 90 % action / 80 % title safe areas drawn on
 the canvas, never into frames).
 
+## Compositing output (MViser#23)
+
+`render --layers background,chords,lyrics` selects layers (default all = unchanged opaque output). Without
+`background` frames are transparent: `--frames` writes RGBA PNG; `--format prores4444` (.mov, `prores_ks`
+yuva444p10le, PCM audio) and `--format webm` (VP9 yuva420p, Opus) carry alpha; `mp4` is opaque and composites over
+black with a warning. `--split-layers` writes one output per layer (`_<layer>` suffix, no audio) for separate
+AE / AviUtl tracks (one render pass per layer).
+
 ## Settings layers (MViser#16)
 
 Effective value = built-in defaults → **Global** file → **Project** file → per-event values.

@@ -14,6 +14,8 @@ from .side_text import side_centres, tile_offsets
 from .motion import MotionState
 from .scene import SceneState
 
+LAYERS = ("background", "chords", "lyrics")
+
 # CJK-capable fonts first so lyrics render on every OS; Latin-only fonts last.
 FONT_CANDIDATES = (
     "YuGothM.ttc", "C:/Windows/Fonts/YuGothM.ttc", "meiryo.ttc", "C:/Windows/Fonts/meiryo.ttc", "msgothic.ttc",
@@ -124,12 +126,22 @@ class Renderer:
                     draw.text((cx, start), text, font=font, fill=fill, anchor="mt")
         image.alpha_composite(layer)
 
-    def render(self, state: SceneState) -> Image.Image:
-        image = Image.new("RGBA", (self.width, self.height), _rgb(state.background_color) + (255,))
-        if state.chord_label:
+    def render_rgba(self, state: SceneState, layers: tuple[str, ...] = LAYERS) -> Image.Image:
+        """Compose the selected layers (MViser#23). Without `background` the frame is transparent."""
+        unknown = set(layers) - set(LAYERS)
+        if unknown:
+            raise ValueError(f"unknown layers {sorted(unknown)}; available: {LAYERS}")
+        if "background" in layers:
+            image = Image.new("RGBA", (self.width, self.height), _rgb(state.background_color) + (255,))
+        else:
+            image = Image.new("RGBA", (self.width, self.height), (0, 0, 0, 0))
+        if "chords" in layers and state.chord_label:
             self._text(image, state.chord_label, (self.width / 2, self.height * 0.42),
                        int(self.style["chord_font_size"]), state.text_color, state.chord_motion, state.chord_scale)
-        if state.lyric:
+        if "lyrics" in layers and state.lyric:
             self._side_text(image, state)
             self._lyric(image, state)
-        return image.convert("RGB")
+        return image
+
+    def render(self, state: SceneState) -> Image.Image:
+        return self.render_rgba(state).convert("RGB")

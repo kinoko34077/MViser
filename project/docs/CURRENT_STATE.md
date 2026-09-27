@@ -1,6 +1,6 @@
 # Current State
 
-Last verified: 2026-09-27 — main 8580ab5 green; subtitle editor (MViser#25) in PR
+Last verified: 2026-09-27 — main b339a3b green; follow defaults / time modes / project info (MViser#27) in PR
 
 ## Implemented
 
@@ -17,6 +17,7 @@ Last verified: 2026-09-27 — main 8580ab5 green; subtitle editor (MViser#25) in
 - Lyric track with ruby rendering (align center/left/right, scale) and vertical text; per-event position (MViser#6).
 - Multiple subtitle sets with per-set lyric style; `--subtitle-set`, `--all-subtitle-sets` (MViser#8).
 - Preview GUI (tkinter): seek, timeline, playback with synced audio (sounddevice, silent fallback, mute), auto-reload, export, subtitle set switch (MViser#10).
+- `follow` for lyric vertical / ruby_align / position; GUI time display modes; Help → Project info (MViser#27).
 - Subtitle editor window (add / retime / edit / delete at the playhead) (MViser#25).
 - Loader reads unquoted `M:B` positions correctly (YAML base-60 disabled).
 - Compositing output: layer selection, RGBA PNG, ProRes 4444 / WebM with alpha, split layers (MViser#23).
@@ -26,7 +27,7 @@ Last verified: 2026-09-27 — main 8580ab5 green; subtitle editor (MViser#25) in
 - Global / Project settings layers and settings window with override toggles (MViser#16).
 - CJK font discovery (Windows / macOS / Linux IPA, Noto, WenQuanYi, fontconfig).
 - CLI: `inspect`, `frame`, `render`, `gui` (range `--start/--end`, `--frames`, `--no-audio`, `--subtitle-set`, `--all-subtitle-sets`).
-- 128 unit / E2E tests covering all eight MViser#2 verification units, the harmony layer, MIDI import, style rules, lyric layout, subtitle sets, the preview controller and the audio player.
+- 135 unit / E2E tests covering all eight MViser#2 verification units, the harmony layer, MIDI import, style rules, lyric layout, subtitle sets, the preview controller and the audio player.
 
 ## MViser#2 MVP-0 / MVP-1 acceptance
 

@@ -16,6 +16,7 @@ from .audio_player import AudioPlayer
 from .global_settings import global_path, load_global
 from .gui_state import load_recent, prune_missing, save_recent, update_recent
 from .guides import guide_shapes
+from .time_format import TIME_MODES, format_time
 from .preview_controller import PreviewController
 from .settings_model import SettingsDocument
 
@@ -37,6 +38,7 @@ class PreviewApp:
         self.recent = prune_missing(load_recent())
         self.show_guides = tk.BooleanVar(value=False)
         self.chord_colors = tk.BooleanVar(value=True)
+        self.time_mode = tk.StringVar(value="absolute")
         root.title("MViser")
         root.geometry("1100x760")
         root.minsize(640, 480)
@@ -73,6 +75,7 @@ class PreviewApp:
         self.view_menu = tk.Menu(menu, tearoff=False)
         menu.add_cascade(label="View", menu=self.view_menu)
         help_menu = tk.Menu(menu, tearoff=False)
+        help_menu.add_command(label="Project info", command=self.show_project_info)
         help_menu.add_command(label="Version", command=lambda: messagebox.showinfo("MViser", f"MViser {__version__}"))
         menu.add_cascade(label="Help", menu=help_menu)
         self.root.config(menu=menu)
@@ -148,6 +151,9 @@ class PreviewApp:
                                        command=self._toggle_chord_colors)
         self.view_menu.add_checkbutton(label="Guidelines", accelerator="G", variable=self.show_guides,
                                        command=self.refresh)
+        for mode in TIME_MODES:
+            self.view_menu.add_radiobutton(label=f"Time: {mode}", value=mode, variable=self.time_mode,
+                                           command=self.refresh)
         self.view_menu.add_separator()
         self._set_var = tk.StringVar(value=self.c.subtitle_set or "")
         for name in self.c.subtitle_sets:
@@ -170,6 +176,14 @@ class PreviewApp:
             return
         error = self.audio.load(project.audio_path, project.audio_start, project.fps)
         self._note = error or self.audio.message or ""
+
+    def show_project_info(self) -> None:
+        from .project_info import project_info
+
+        if not self.c.project:
+            return
+        text = "\n".join(f"{k}: {v}" for k, v in project_info(self.c.project, self.c.path))
+        messagebox.showinfo("Project info", text)
 
     def _toggle_chord_colors(self) -> None:
         self.c.chord_colors = self.chord_colors.get()
@@ -319,7 +333,11 @@ class PreviewApp:
         self._draw_timeline()
         r = self.c.readout()
         chord = f"{r['chord']} ({r['roman']})" if r["roman"] else r["chord"]
-        self.info.configure(text=f"{r['time']}  [{r['position']}]  f{r.get('frame', '')}  {chord}  {r['lyric']}")
+        if self.c.project:
+            shown = format_time(self.c.frame, self.c.project.tempo, self.time_mode.get())
+            self.info.configure(text=f"{shown}  [{r['time']} | {r['position']}]  {chord}  {r['lyric']}")
+        else:
+            self.info.configure(text="")
         if update_slider:
             self.slider.set(self.c.frame)
         if not self.c.error and not self._busy:

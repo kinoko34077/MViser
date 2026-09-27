@@ -48,6 +48,7 @@ Status: provisional (MViser#2 MVP-0). Long-term concept baseline: MViser#1.
 | `gui_state.py` | recent project list (update / prune / persist) |
 | `guides.py` | guideline overlay geometry |
 | `lyric_editor.py` / `lyric_window.py` | lyric CRUD over the project YAML / Tk view (MViser#25) |
+| `time_format.py` / `project_info.py` | time display modes / project info rows (MViser#27) |
 | `audio_player.py` | FFmpeg PCM decode, `sounddevice` output, audio-master clock, silent fallback (MViser#12) |
 
 ## Project schema (`schema_version: 1`)
@@ -76,7 +77,8 @@ style:
   auto_chord_colors: bool    # default true: hue by root, darker for minor qualities
   ruby_scale: 0.5            # ruby size / lyric size (0, 1]
   ruby_align: center | left | right   # left/right = top/bottom in vertical text
-  vertical: false            # vertical lyrics (stacked, ruby on the right)
+  vertical: false            # vertical lyrics (stacked, ruby on the right); ruby_align / vertical /
+                             # lyric_position may be `follow` (previous lyric's value; first → built-in)
   lyric_position: [x, y] | null       # fractions; default [0.5, 0.82], vertical [0.88, 0.5]
   side_text: {side: none|left|right|both, size: 36, spacing: 48, opacity: 0.35, margin: 0.06,
               scroll: 40, vertical: true}   # MViser#19 repeated margin text (px, px/s, fraction)
@@ -105,7 +107,7 @@ events:                      # common time-range model
     motion: cut|fade|slide   # per-event override
     duration: time           # optional early end
     pulse: number            # chord only: overrides rule / motion.pulse
-    ruby_align / vertical / position   # lyric only: per-event overrides
+    ruby_align / vertical / position   # lyric only: per-event overrides; `follow` = previous lyric's value
     repeat_side: none|left|right|both  # lyric only: repeated side text (default style.side_text.side)
     loop_text: str                     # lyric only: side text instead of the lyric base text
 chords: [{at, chord, ...}]   # shorthand → events(type: chord)
@@ -192,6 +194,8 @@ New times are written as quoted `"M:B.bb"` (tempo mode) or seconds, always mappi
 
 YAML note: the loader disables YAML 1.1 base-60 numbers, so unquoted `at: 3:1` is read as measure 3 beat 1 (PyYAML
 would otherwise read 181). Quoting is still recommended for other YAML tools.
+
+GUI View → Time: absolute (mm:ss.ff) / tempo (M:B.bb) / frames for the readout; Help → Project info (MViser#27).
 
 ## Settings layers (MViser#16)
 

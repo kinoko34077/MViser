@@ -1,70 +1,66 @@
 # Current State
 
-Last verified: 2026-09-27 — main 388f57a green; subtitle undo/redo (MViser#35) in PR
+Last verified: 2026-09-27 — `main` after PR #36 (40d71c9) plus the documentation audit PR; CI green on Ubuntu pwsh /
+Windows pwsh / Windows PowerShell 5.1; `knt doctor` OK. Version 0.2.0.
 
-## Implemented
+## Implemented (by area)
 
-- Repository Base 0.5.9 adopted (profile `cli`; CLI Default OVERRIDE, ci-test Default DISABLED).
-- MVP-0 pipeline: YAML → compile (measure:beat → frame) → SceneState → Pillow render → FFmpeg MP4 with audio / PNG sequence.
-- Chord symbol parser (major, minor, dim, dim7, aug, sus2, sus4, 6, 7, maj7, m7, m7b5, slash bass, tensions).
-- Harmony layer (ADR 0002): `ChordSpec` in cents; mappers `symbol` / `degree` / `tones` (microtonal, JI, EDO) /
-  `pitch_set`; analyzers `pitch_classes` / `identify` (fail-open UNKNOWN) / `function` (roman, diatonic, function);
-  `project.key`, `harmony.display` (symbol / source / roman); μChordbot `.mcb` import.
-- Analysis-driven styling `style.rules` (MViser#4): colour / text colour / motion / pulse by quality, function, roman, diatonic, microtonal, notation, root.
-- MVP-1 MIDI import (`mido`): chord segmentation (strum window, silence gaps) and single-note mode (ADR 0003).
-- Motion presets `cut` / `fade` / `slide`, beat-phase `pulse`, per-event override.
-- Automatic per-root chord colours with explicit overrides.
-- Lyric track with ruby rendering (align center/left/right, scale) and vertical text; per-event position (MViser#6).
-- Multiple subtitle sets with per-set lyric style; `--subtitle-set`, `--all-subtitle-sets` (MViser#8).
-- Preview GUI (tkinter): seek, timeline, playback with synced audio (sounddevice, silent fallback, mute), auto-reload, export, subtitle set switch (MViser#10).
-- Subtitle editor undo / redo (MViser#35).
-- Integrated side panel (docked subtitle editor + chord list), toggle and width remembered (MViser#33).
-- Dark theme; GUI preferences (theme, time mode, guides, chord colours) remembered (MViser#31).
-- Editor handoff: split alpha layers + AviUtl .exo + AE .jsx from editable templates (MViser#29; exedit keys unverified).
-- `follow` for lyric vertical / ruby_align / position; GUI time display modes; Help → Project info (MViser#27).
-- Subtitle editor window (add / retime / edit / delete at the playhead) (MViser#25).
-- Loader reads unquoted `M:B` positions correctly (YAML base-60 disabled).
-- Compositing output: layer selection, RGBA PNG, ProRes 4444 / WebM with alpha, split layers (MViser#23).
-- GUI: recent files, preview-only chord colour toggle, guideline overlay (MViser#20).
-- Repeated side text in the margins, scrolling per lyric event (MViser#19).
-- Timeline waveform row and beat / measure grid (MViser#18).
-- Global / Project settings layers and settings window with override toggles (MViser#16).
-- CJK font discovery (Windows / macOS / Linux IPA, Noto, WenQuanYi, fontconfig).
-- CLI: `inspect`, `frame`, `render`, `gui` (range `--start/--end`, `--frames`, `--no-audio`, `--subtitle-set`, `--all-subtitle-sets`).
-- 145 unit / E2E tests covering all eight MViser#2 verification units, the harmony layer, MIDI import, style rules, lyric layout, subtitle sets, the preview controller and the audio player.
+**Base / tooling**
+- KiNoTch. Repository Base 0.5.9 (profile `cli`; CLI Default OVERRIDE, ci-test Default DISABLED). Runtime not used (ADR 0001).
+- Dependencies per ADR 0003: Pillow, PyYAML, imageio-ffmpeg, mido, numpy, sounddevice, ruamel.yaml; tkinter for the GUI.
 
-## MViser#2 MVP-0 / MVP-1 acceptance
+**Input / harmony**
+- `.mvproj.yaml` schema v1; unquoted `M:B` positions read correctly (YAML base-60 disabled) (#25).
+- Chord mappers `symbol` / `degree` / `tones` (microtonal, JI, EDO) / `pitch_set`; analyzers `pitch_classes` /
+  `identify` (fail-open UNKNOWN) / `function` (ADR 0002).
+- Imports: μChordbot `.mcb`, MIDI via `mido` (chord segmentation, single notes) (#2).
 
-MVP-0 and MVP-1 are satisfied (recorded on MViser#2). MVP-0's nine checkboxes are covered by `project/tests/` (YAML load, measure/beat→frame, active chord, local progress,
-SceneState-based background+label, enter animation, frame sequence, audio MP4, boundary tests).
+**Rendering**
+- Frame compile → SceneState → Pillow; motion `cut` / `fade` / `slide`, beat pulse (#2); style rules by harmony (#4).
+- Lyrics: ruby, vertical text, `follow` defaults, subtitle sets, repeated side text (#6, #27, #8, #19); CJK font discovery.
+
+**Output**
+- MP4 with audio, PNG sequence, range export (#2); alpha layers: RGBA PNG / ProRes 4444 / WebM, split layers (#23).
+- Editor handoff: AviUtl `.exo` + After Effects `.jsx` from editable templates (#29; exedit keys unverified).
+
+**GUI** (ADR 0004)
+- Preview, timeline (chords / lyrics / waveform / beat grid), audio-synced playback with silent fallback (#10, #12, #18).
+- Settings window with Global / Project layers (#16); recent files, chord-colour toggle, guides (#20);
+  time modes, project info (#27); light / dark theme, remembered prefs (#31).
+- Subtitle editor (window and docked side panel), chord list, undo / redo (#25, #33, #35).
+
+**CLI**: `inspect`, `frame`, `render` (`--start/--end`, `--frames`, `--layers`, `--split-layers`, `--format`,
+`--subtitle-set`, `--all-subtitle-sets`, `--no-audio`), `handoff`, `gui`.
+
+**Tests**: 145 unit / E2E tests (`knt verify`), incl. FFmpeg round trips and headless GUI models.
+
+## Issue map
+
+| Issue | State |
+| --- | --- |
+| #1 concept baseline | all items implemented (status table on #1); kept open as the long-term reference |
+| #2 MVP-0 / MVP-1 | done |
+| #4 #6 #8 #10 #12 #16 #18 #19 #20 #23 #25 #27 #31 #33 #35 | done (closed by their PRs) |
+| #14 manual verification | open — waiting for real-hardware results (16 checks, priorities in the checklist) |
+| #29 editor handoff | implemented; open until #14 `handoff` confirms the exedit keys |
 
 ## Known issues / constraints
 
-- Lyrics need a CJK font; auto-discovered on Windows / macOS / common Linux fonts, otherwise set `style.font_path`.
-- Audio playback not verified on real hardware in the build container (no PortAudio there; fallback path verified); the Linux Python used in the build container lacks tkinter (GUI smoke run with system Python 3.12 + Xvfb).
+- Not yet verified on real hardware: audio output, Windows fonts / look, AviUtl `.exo` keys, AE `.jsx`, FL Studio MIDI (MViser#14).
 - Fixed BPM, 4/4, single audio file; WAV duration auto-detected, other formats need `project.duration`.
 - Vertical text: no rotation of long-vowel marks / punctuation, no tate-chu-yoko.
-- KiNoTch. Runtime not integrated (see ADR 0001).
-- Function analysis is a first cut (no key detection, secondary dominants reported as chromatic).
+- Function analysis is a first cut (no key detection; secondary dominants reported as chromatic).
+- Theme change recolours menus only after restart (Tk).
+- The build container's default Python lacks tkinter; GUI smoke tests use system Python 3.12 + Xvfb.
 - "Music-dsl" repository not found; μChordbot DSL spec used as reference.
 
 ## Manual verification
 
-Real-hardware checks are tracked in MViser#14; the canonical list is `project/verification/manual_checks.yaml`
-(`python project/tools/manual_check.py [--prepare|--markdown]`).
+Canonical list: `project/verification/manual_checks.yaml` (`python project/tools/manual_check.py [--prepare|--markdown]`),
+generated into MViser#14. High-priority checks are listed first there.
 
 ## Next work
 
-1. KiNoTch. review of the rendered sample look (colours, font sizes, motion feel).
-2. Try MIDI import with real FL Studio exports; tune `window` / `min_duration` defaults.
-3. #1 baseline items are all implemented; tune everything from MViser#14 feedback, then consider chord editing in the GUI and advanced animation.
-
-## Verification
-
-```text
-knt.cmd doctor
-knt.cmd setup
-knt.cmd verify
-python project/tools/make_click_wav.py project/samples/click.wav 135 16
-python project/tools/run_mviser.py render project/samples/sample.mvproj.yaml -o project/output/sample.mp4
-```
+1. Collect MViser#14 results; fix templates / defaults accordingly (close #29 when `handoff` passes).
+2. Tune MIDI `window` / `min_duration` with real FL Studio exports.
+3. Candidates: chord editing in the GUI, advanced animation, variable tempo / time signatures.

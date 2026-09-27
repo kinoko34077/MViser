@@ -13,6 +13,8 @@ class ManualCheckTests(unittest.TestCase):
         for check in data["checks"]:
             self.assertIn(f"**{check['id']}**", md)
         self.assertIn("manual_checks.yaml", md)
+        self.assertIn("### Priority (please check these first)", md)
+        self.assertLess(md.index("**handoff** —"), md.index("### All checks"))
 
     def test_status_marks_and_validation(self):
         data = {"checks": [

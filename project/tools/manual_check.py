@@ -26,6 +26,8 @@ def load(path: Path = CHECKS) -> dict:
         for key in ("id", "area", "steps", "expected", "status"):
             if key not in check:
                 raise ValueError(f"check {check.get('id', '?')}: missing {key}")
+        if check.get("priority", "normal") not in ("high", "normal"):
+            raise ValueError(f"check {check['id']}: priority must be high or normal")
         if check["status"] not in STATUSES:
             raise ValueError(f"check {check['id']}: status must be one of {STATUSES}")
         if check["id"] in ids:
@@ -44,6 +46,11 @@ def to_markdown(data: dict) -> str:
         f"Environment: {data.get('environment_hint', '')}",
         "",
     ]
+    high = [c for c in data["checks"] if c.get("priority") == "high" and c["status"] in ("pending", "ng")]
+    if high:
+        lines += ["### Priority (please check these first)", ""]
+        lines += [f"- **{c['id']}** — {c['expected'].split(';')[0]}" for c in high]
+        lines += ["", "### All checks", ""]
     for c in data["checks"]:
         tag = {"ng": " **NG**", "skip": " (skipped)"}.get(c["status"], "")
         lines.append(f"- [{STATUS_MARK[c['status']]}] **{c['id']}** ({c['area']}, from {c.get('from', '-')}){tag}")

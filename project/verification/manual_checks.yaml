@@ -75,6 +75,16 @@ checks:
     expected: "Recent lists both (newest first); colours toggle only in the preview; guides visible in preview but not in exported frames"
     status: pending
     result: ""
+  - id: alpha-layers
+    area: output
+    from: "#23"
+    steps:
+      - "python project/tools/run_mviser.py render project/samples/sample.mvproj.yaml --layers chords,lyrics --format prores4444 -o project/output/text.mov"
+      - "python project/tools/run_mviser.py render project/samples/sample.mvproj.yaml --split-layers --frames project/output/layers"
+      - "Place text.mov above an illustration in After Effects; import the layer PNG folders into AviUtl"
+    expected: "Text layers are transparent outside the glyphs in AE and AviUtl; layers stay in sync with the audio-bearing full render"
+    status: pending
+    result: ""
   - id: midi-fl
     area: input
     from: "#2 (MVP-1)"

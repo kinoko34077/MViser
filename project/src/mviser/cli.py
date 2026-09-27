@@ -9,9 +9,9 @@ from pathlib import Path
 
 from . import __version__
 from .project_data import ProjectError, load_project
-from .render_engine import Renderer
 from .scene import resolve_scene_state
-from .video import FrameRange, write_frame_sequence, write_video
+from .render_engine import LAYERS, Renderer
+from .video import FORMATS, FrameRange, write_frame_sequence, write_video
 
 
 def _progress(done: int, total: int) -> None:
@@ -66,18 +66,35 @@ def _suffixed(path: str, name: str | None) -> str:
     return str(p.with_name(f"{p.stem}_{name}{p.suffix}")) if p.suffix else str(p / name)
 
 
+def _layer_sets(args) -> list[tuple[tuple[str, ...], str | None]]:
+    layers = tuple(x.strip() for x in args.layers.split(",") if x.strip())
+    bad = set(layers) - set(LAYERS)
+    if bad or not layers:
+        raise ValueError(f"--layers must be a subset of {','.join(LAYERS)}")
+    if args.split_layers:
+        return [((layer,), layer) for layer in layers]
+    return [(layers, None)]
+
+
 def _render_one(args, subtitle_set: str | None, suffix: str | None) -> None:
     project = load_project(args.project, subtitle_set)
     frame_range = FrameRange.from_seconds(project, args.start, args.end)
-    if args.frames:
-        frames = _suffixed(args.frames, suffix)
-        write_frame_sequence(project, frames, frame_range, _progress)
-        print(frames)
-    if args.output or not args.frames:
-        output = args.output or str(Path("output") / (Path(args.project).name.split(".")[0] + ".mp4"))
-        output = _suffixed(output, suffix)
-        write_video(project, output, frame_range, with_audio=not args.no_audio, progress=_progress)
-        print(output)
+    ext = FORMATS[args.format][0]
+    for layers, layer_suffix in _layer_sets(args):
+        name = "_".join(x for x in (suffix, layer_suffix) if x) or None
+        if args.frames:
+            frames = _suffixed(args.frames, name)
+            write_frame_sequence(project, frames, frame_range, _progress, layers)
+            print(frames)
+        if args.output or not args.frames:
+            output = args.output or str(Path("output") / (Path(args.project).name.split(".")[0] + ext))
+            output = _suffixed(output, name)
+            if not FORMATS[args.format][2] and "background" not in layers:
+                print(f"[mviser] warning: {args.format} has no alpha; layers composited over black "
+                      "(use --format prores4444 or webm, or --frames for RGBA PNG)", file=sys.stderr)
+            write_video(project, output, frame_range, with_audio=not args.no_audio and not layer_suffix,
+                        progress=_progress, layers=layers, fmt=args.format)
+            print(output)
 
 
 def cmd_render(args) -> int:
@@ -124,6 +141,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--end", type=float, help="range end (seconds)")
     p.add_argument("--no-audio", action="store_true")
     p.add_argument("--all-subtitle-sets", action="store_true", help="one output per subtitle set (_<name> suffix)")
+    p.add_argument("--layers", default=",".join(LAYERS), help="subset of background,chords,lyrics (MViser#23)")
+    p.add_argument("--split-layers", action="store_true", help="one output per layer (_<layer> suffix, no audio)")
+    p.add_argument("--format", choices=sorted(FORMATS), default="mp4",
+                   help="mp4 (opaque) | prores4444 (.mov, alpha) | webm (VP9, alpha)")
     p.set_defaults(func=cmd_render)
     p = sub.add_parser("gui", help="preview window with timeline seek")
     p.add_argument("project", nargs="?")

@@ -1,6 +1,6 @@
 # Current State
 
-Last verified: 2026-09-27 — main e0b55ef green; preview GUI (MViser#10) in PR; Japanese ruby rendering visually confirmed with IPA Gothic
+Last verified: 2026-09-27 — main ec0b104 green; preview audio (MViser#12) in PR
 
 ## Implemented
 
@@ -16,10 +16,10 @@ Last verified: 2026-09-27 — main e0b55ef green; preview GUI (MViser#10) in PR;
 - Automatic per-root chord colours with explicit overrides.
 - Lyric track with ruby rendering (align center/left/right, scale) and vertical text; per-event position (MViser#6).
 - Multiple subtitle sets with per-set lyric style; `--subtitle-set`, `--all-subtitle-sets` (MViser#8).
-- Preview GUI (tkinter): seek, timeline, playback without audio, auto-reload, export, subtitle set switch (MViser#10).
+- Preview GUI (tkinter): seek, timeline, playback with synced audio (sounddevice, silent fallback, mute), auto-reload, export, subtitle set switch (MViser#10).
 - CJK font discovery (Windows / macOS / Linux IPA, Noto, WenQuanYi, fontconfig).
 - CLI: `inspect`, `frame`, `render`, `gui` (range `--start/--end`, `--frames`, `--no-audio`, `--subtitle-set`, `--all-subtitle-sets`).
-- 84 unit / E2E tests covering all eight MViser#2 verification units, the harmony layer, MIDI import, style rules, lyric layout, subtitle sets and the preview controller.
+- 89 unit / E2E tests covering all eight MViser#2 verification units, the harmony layer, MIDI import, style rules, lyric layout, subtitle sets, the preview controller and the audio player.
 
 ## MViser#2 MVP-0 / MVP-1 acceptance
 
@@ -29,7 +29,7 @@ SceneState-based background+label, enter animation, frame sequence, audio MP4, b
 ## Known issues / constraints
 
 - Lyrics need a CJK font; auto-discovered on Windows / macOS / common Linux fonts, otherwise set `style.font_path`.
-- GUI playback has no audio yet; the Linux Python used in the build container lacks tkinter (GUI smoke run with system Python 3.12 + Xvfb).
+- Audio playback not verified on real hardware in the build container (no PortAudio there; fallback path verified); the Linux Python used in the build container lacks tkinter (GUI smoke run with system Python 3.12 + Xvfb).
 - Fixed BPM, 4/4, single audio file; WAV duration auto-detected, other formats need `project.duration`.
 - Vertical text: no rotation of long-vowel marks / punctuation, no tate-chu-yoko.
 - KiNoTch. Runtime not integrated (see ADR 0001).
@@ -40,7 +40,7 @@ SceneState-based background+label, enter animation, frame sequence, audio MP4, b
 
 1. KiNoTch. review of the rendered sample look (colours, font sizes, motion feel).
 2. Try MIDI import with real FL Studio exports; tune `window` / `min_duration` defaults.
-3. Audio playback synced to the preview; then settings window (#1 Priority A).
+3. Settings window (#1 Priority A); waveform on the timeline (#1 Priority D).
 
 ## Verification
 

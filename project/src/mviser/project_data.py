@@ -25,6 +25,7 @@ DEFAULTS: dict[str, Any] = {
     "project": {
         "title": "Untitled",
         "key": None,
+        "subtitle_set": None,
         "bpm": 120,
         "fps": 30,
         "resolution": [1920, 1080],
@@ -95,19 +96,52 @@ def _check_lyric_options(obj: dict[str, Any], where: str) -> None:
             raise ProjectError(f"{where}.{key} must be [x, y] fractions in 0..1")
 
 
-def normalize(raw: dict[str, Any], base_dir: Path | str = ".") -> dict[str, Any]:
+SET_STYLE_KEYS = ("lyric_font_size", "ruby_scale", "ruby_align", "vertical", "lyric_position", "font_path", "text_color")
+
+
+def _select_subtitle_set(doc: dict[str, Any], requested: str | None) -> None:
+    """Fold the active subtitle set into `lyrics` + `style` (MViser#8)."""
+    sets = list(doc.pop("subtitle_sets", None) or [])
+    offset = 0
+    if doc.get("lyrics"):
+        sets.insert(0, {"name": "default", "lyrics": doc["lyrics"]})
+        offset = 1
+    names = []
+    for index, item in enumerate(sets):
+        i = index - offset  # position in the user's `subtitle_sets` list
+        if not isinstance(item, dict) or not item.get("name") or not isinstance(item.get("lyrics", []), list):
+            raise ProjectError(f"subtitle_sets[{i}]: needs 'name' and a 'lyrics' list")
+        if item["name"] in names:
+            raise ProjectError(f"subtitle_sets[{i}]: duplicate name {item['name']!r}")
+        names.append(item["name"])
+        for key in item.get("style") or {}:
+            if key not in SET_STYLE_KEYS:
+                raise ProjectError(f"subtitle_sets[{i}].style.{key}: not a lyric setting (allowed: {SET_STYLE_KEYS})")
+    wanted = requested or doc["project"].get("subtitle_set")
+    if wanted is not None and wanted not in names:
+        raise ProjectError(f"unknown subtitle set {wanted!r}; available: {names}")
+    active = next((item for item in sets if item["name"] == wanted), sets[0] if sets else None)
+    doc["subtitle_sets"] = names
+    doc["active_subtitle_set"] = active["name"] if active else None
+    doc["lyrics"] = list(active.get("lyrics") or []) if active else []
+    if active and active.get("style"):
+        doc["style"] = _merge(doc["style"], active["style"])
+
+
+def normalize(raw: dict[str, Any], base_dir: Path | str = ".", subtitle_set: str | None = None) -> dict[str, Any]:
     """Validate a raw document and fill defaults. Returns a new dict."""
     if not isinstance(raw, dict):
         raise ProjectError("project file must be a mapping")
     version = raw.get("schema_version", SCHEMA_VERSION)
     if version != SCHEMA_VERSION:
         raise ProjectError(f"unsupported schema_version: {version}")
-    known = set(DEFAULTS) | {"schema_version", "events", "chords", "lyrics", "imports"}
+    known = set(DEFAULTS) | {"schema_version", "events", "chords", "lyrics", "imports", "subtitle_sets"}
     unknown = set(raw) - known
     if unknown:
         raise ProjectError(f"unknown top-level keys: {sorted(unknown)}")
     doc = _merge({k: v for k, v in DEFAULTS.items() if v is not None}, {k: v for k, v in raw.items() if v is not None})
     doc["schema_version"] = SCHEMA_VERSION
+    _select_subtitle_set(doc, subtitle_set)
 
     project = doc["project"]
     try:
@@ -284,13 +318,13 @@ def compile_project(doc: dict[str, Any], base_dir: Path | str = ".") -> Compiled
     return CompiledProject(doc, base_dir, tempo, total_frames, tracks, context)
 
 
-def load_project(path: Path | str) -> CompiledProject:
+def load_project(path: Path | str, subtitle_set: str | None = None) -> CompiledProject:
     path = Path(path)
     try:
         raw = yaml.safe_load(path.read_text(encoding="utf-8"))
     except yaml.YAMLError as exc:
         raise ProjectError(f"{path}: invalid YAML: {exc}") from exc
-    return compile_project(normalize(raw or {}, path.parent), path.parent)
+    return compile_project(normalize(raw or {}, path.parent, subtitle_set), path.parent)
 
 
 def save_project(doc: dict[str, Any], path: Path | str) -> None:

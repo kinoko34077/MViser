@@ -28,6 +28,9 @@ class SceneState:
     lyric_align: str = "center"
     lyric_vertical: bool = False
     lyric_position: tuple[float, float] = (0.5, 0.82)
+    side_text: str | None = None
+    side: str = "none"
+    side_scroll: float = 0.0  # px offset along the strip
 
 
 def is_minor_like(spec: ChordSpec) -> bool:
@@ -106,6 +109,9 @@ def resolve_scene_state(project: CompiledProject, frame: int) -> SceneState:
             lyric_align=payload.get("ruby_align", style["ruby_align"]),
             lyric_vertical=vertical,
             lyric_position=tuple(position),
+            side_text=payload.get("loop_text", payload["text"]),
+            side=payload.get("repeat_side", style["side_text"]["side"]),
+            side_scroll=float(style["side_text"]["scroll"]) * local,
             lyric_motion=enter(payload.get("motion", motion["enter"]), local, float(motion["enter_duration"])),
         )
     return SceneState(**state)

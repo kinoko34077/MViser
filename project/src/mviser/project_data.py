@@ -14,6 +14,7 @@ from .harmony import ChordSpec, HarmonyContext, MappingError, default_registry
 from .harmony.sources import IMPORTERS, SourceError
 from .motion import PRESETS
 from .lyric_layout import ALIGNS
+from .side_text import SIDE_DEFAULTS, SIDES, validate_side_text
 from .ruby import parse_ruby, strip_ruby
 from .styling import StyleRuleError, match_rules, validate_rules
 from .timeline import BEATS_PER_MEASURE, Tempo, TimelineError, Track, build_track
@@ -46,6 +47,7 @@ DEFAULTS: dict[str, Any] = {
         "ruby_align": "center",
         "vertical": False,
         "lyric_position": None,      # [x, y] fractions; default [0.5, 0.82] / vertical [0.88, 0.5]
+        "side_text": {},             # MViser#19; see side_text.SIDE_DEFAULTS
     },
     "motion": {"enter": "fade", "enter_duration": 0.2, "pulse": 0.04},
     "harmony": {
@@ -96,7 +98,8 @@ def _check_lyric_options(obj: dict[str, Any], where: str) -> None:
             raise ProjectError(f"{where}.{key} must be [x, y] fractions in 0..1")
 
 
-SET_STYLE_KEYS = ("lyric_font_size", "ruby_scale", "ruby_align", "vertical", "lyric_position", "font_path", "text_color")
+SET_STYLE_KEYS = ("lyric_font_size", "ruby_scale", "ruby_align", "vertical", "lyric_position", "font_path", "text_color",
+                  "side_text")
 
 
 def _select_subtitle_set(doc: dict[str, Any], requested: str | None) -> None:
@@ -165,6 +168,12 @@ def normalize(raw: dict[str, Any], base_dir: Path | str = ".", subtitle_set: str
         style["chord_colors"][name] = _check_color(color, f"style.chord_colors.{name}")
 
     _check_lyric_options(style, "style")
+    if not isinstance(style["side_text"], dict):
+        raise ProjectError("style.side_text must be a mapping")
+    errors = validate_side_text(style["side_text"], "style.side_text")
+    if errors:
+        raise ProjectError(errors[0])
+    style["side_text"] = {**SIDE_DEFAULTS, **style["side_text"]}
     if not isinstance(style["ruby_scale"], (int, float)) or isinstance(style["ruby_scale"], bool) \
             or not 0 < style["ruby_scale"] <= 1:
         raise ProjectError("style.ruby_scale must be in (0, 1]")
@@ -212,6 +221,10 @@ def normalize(raw: dict[str, Any], base_dir: Path | str = ".", subtitle_set: str
             raise ProjectError(f"events[{i}]: lyric value must be text")
         if event["type"] == "lyric":
             _check_lyric_options(event, f"events[{i}]")
+            if "repeat_side" in event and event["repeat_side"] not in SIDES:
+                raise ProjectError(f"events[{i}].repeat_side must be one of {SIDES}")
+            if "loop_text" in event and not isinstance(event["loop_text"], str):
+                raise ProjectError(f"events[{i}].loop_text must be text")
         if "motion" in event and event["motion"] not in PRESETS:
             raise ProjectError(f"events[{i}]: motion must be one of {PRESETS}")
         if "pulse" in event and (isinstance(event["pulse"], bool) or not isinstance(event["pulse"], (int, float))
@@ -302,7 +315,7 @@ def compile_project(doc: dict[str, Any], base_dir: Path | str = ".") -> Compiled
         else:
             payload["text"] = strip_ruby(str(event["value"]))
             payload["segments"] = tuple(parse_ruby(str(event["value"])))
-            for key in ("ruby_align", "vertical", "position"):
+            for key in ("ruby_align", "vertical", "position", "repeat_side", "loop_text"):
                 if key in event:
                     payload[key] = event[key]
         starts[event["type"]].append((tempo.seconds_to_frame(seconds), payload))

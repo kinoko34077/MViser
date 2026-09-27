@@ -40,6 +40,7 @@ Status: provisional (MViser#2 MVP-0). Long-term concept baseline: MViser#1.
 | `cli.py` | `inspect` / `frame` / `render` / `gui` surface |
 | `preview_controller.py` | Tk-free preview state: seek, chord jump, readout, timeline geometry, auto-reload, export |
 | `gui.py` | tkinter view (MViser#10) |
+| `audio_player.py` | FFmpeg PCM decode, `sounddevice` output, audio-master clock, silent fallback (MViser#12) |
 
 ## Project schema (`schema_version: 1`)
 
@@ -149,10 +150,12 @@ and fails open to `UNKNOWN` with the raw pitch set (`display: "?(C-C#-D)"`). `fu
 ## Preview GUI (MViser#10)
 
 `python project/tools/run_mviser.py gui [project] [--subtitle-set NAME]` — preview scaled to the window, timeline
-(chord / lyric rows, click or drag to seek), slider, play/pause at project fps (no audio yet), readout
+(chord / lyric rows, click or drag to seek), slider, play/pause with audio (MViser#12), readout
 (time, measure:beat, frame, chord + roman, lyric). Keys: Space play, ←/→ frame, Shift+←/→ 1 s, ↑/↓ prev/next chord,
-Home, F5 reload, Ctrl+O open. The project file is polled and reloaded on save; a broken save keeps the last good
-project and shows the error. File menu exports MP4 / PNG frames in a background thread; View menu switches subtitle sets.
+Home, F5 reload, Ctrl+O open, M mute. The project file is polled and reloaded on save; a broken save keeps the last good
+project and shows the error. Audio is decoded once by FFmpeg (any format it reads, from `audio.start`) and played
+with `sounddevice`; the audio position is the playback clock. Without sounddevice / PortAudio / a device, playback
+is silent on the wall clock and the status bar says why. File menu exports MP4 / PNG frames in a background thread; View menu switches subtitle sets.
 
 ## Non-goals (MVP-0)
 

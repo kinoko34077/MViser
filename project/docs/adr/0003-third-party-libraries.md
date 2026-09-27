@@ -7,7 +7,9 @@ Date: 2026-09-27 — Status: accepted
 KiNoTch. policy: when a well-maintained library satisfies the requirement/spec, use it instead of writing our own.
 Custom code is kept only where MViser-specific meaning lives (timeline→frame, SceneState, harmony mapper contracts).
 
-Current dependencies: Pillow (drawing), PyYAML (project file), imageio-ffmpeg (FFmpeg binary), **mido** (MIDI).
+Current dependencies: Pillow (drawing), PyYAML (project file), imageio-ffmpeg (FFmpeg binary), **mido** (MIDI),
+**numpy + sounddevice** (preview audio; PortAudio bundled in Windows/macOS wheels, optional at runtime).
+tkinter (stdlib) for the GUI.
 
 MIDI reading uses `mido` (pure Python, tempo-map aware `merge_tracks`/`tick2second`). Alternatives:
 

@@ -11,6 +11,7 @@ from tkinter import filedialog, messagebox, ttk
 from PIL import ImageTk
 
 from . import __version__
+from .audio_player import AudioPlayer
 from .preview_controller import PreviewController
 
 TIMELINE_HEIGHT = 64
@@ -25,12 +26,16 @@ class PreviewApp:
         self._play_origin: tuple[float, int] | None = None
         self._photo = None
         self._busy = False
+        self.audio = AudioPlayer()
+        self._audio_clock = False
+        self._note = ""
         root.title("MViser")
         root.geometry("1100x760")
         root.minsize(640, 480)
         self._build_menu()
         self._build_body()
         self._bind_keys()
+        self._load_audio()
         self.refresh()
         root.after(POLL_MS, self._poll_file)
 
@@ -89,6 +94,7 @@ class PreviewApp:
         r.bind("<Home>", lambda _e: self._nav(lambda: self.c.seek(0)))
         r.bind("<F5>", lambda _e: self.reload())
         r.bind("<Control-o>", lambda _e: self.open_dialog())
+        r.bind("m", lambda _e: self.toggle_mute())
 
     def _rebuild_view_menu(self) -> None:
         self.view_menu.delete(0, "end")
@@ -107,7 +113,24 @@ class PreviewApp:
     def _on_timeline(self, event) -> None:
         self._nav(lambda: self.c.frame_at_x(event.x, self.timeline.winfo_width()))
 
+    def _load_audio(self) -> None:
+        project = self.c.project
+        if project is None:
+            return
+        error = self.audio.load(project.audio_path, project.audio_start, project.fps)
+        self._note = error or self.audio.message or ""
+
+    def toggle_mute(self) -> None:
+        self.audio.muted = not self.audio.muted
+        self._note = "muted" if self.audio.muted else (self.audio.message or "")
+        if self.playing:  # restart on the other clock
+            self.toggle_play()
+            self.toggle_play()
+
     def _after_load(self, error: str | None) -> None:
+        if self.playing:
+            self.toggle_play()
+        self._load_audio()
         self.slider.configure(to=max(self.c.total_frames - 1, 1))
         self._rebuild_view_menu()
         self.refresh()
@@ -135,13 +158,20 @@ class PreviewApp:
             if self.c.frame >= self.c.total_frames - 1:
                 self.c.seek(0)
             self._play_origin = (time.perf_counter(), self.c.frame)
+            self._audio_clock = self.audio.play(self.c.frame)
+            self._note = self.audio.message or self._note
             self._tick()
+        else:
+            self.audio.stop()
+            self._audio_clock = False
 
     def _tick(self) -> None:
         if not self.playing or self._play_origin is None:
             return
         start_time, start_frame = self._play_origin
-        target = start_frame + int((time.perf_counter() - start_time) * self.c.fps)
+        target = self.audio.current_frame() if self._audio_clock else None
+        if target is None:  # silent playback, or audio finished before the video
+            target = start_frame + int((time.perf_counter() - start_time) * self.c.fps)
         if target >= self.c.total_frames - 1:
             self.c.seek(self.c.total_frames - 1)
             self.toggle_play()
@@ -198,7 +228,8 @@ class PreviewApp:
         if update_slider:
             self.slider.set(self.c.frame)
         if not self.c.error and not self._busy:
-            self.status.configure(text=str(self.c.path or ""), foreground="#606060")
+            text = str(self.c.path or "") + (f"   —   {self._note}" if self._note else "")
+            self.status.configure(text=text, foreground="#8a6d00" if self._note else "#606060")
         title = f"MViser — {self.c.path.name}" if self.c.path else "MViser"
         self.root.title(title + (f" [{self.c.subtitle_set}]" if self.c.subtitle_set else ""))
 

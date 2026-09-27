@@ -63,6 +63,28 @@ class ProjectError(ValueError):
     pass
 
 
+class _Loader(yaml.SafeLoader):
+    """SafeLoader without YAML 1.1 base-60 numbers, so unquoted `at: 3:1` stays the string "3:1"."""
+
+
+_Loader.yaml_implicit_resolvers = {
+    key: [(tag, rx) for tag, rx in resolvers
+          if not (tag in ("tag:yaml.org,2002:int", "tag:yaml.org,2002:float")
+                  and (rx.match("3:1") or rx.match("4:4.5")))]
+    for key, resolvers in yaml.SafeLoader.yaml_implicit_resolvers.items()
+}
+for _tag, _rx in (("tag:yaml.org,2002:int", r"^[-+]?(0b[0-1_]+|0[0-7_]+|(?:0|[1-9][0-9_]*)|0x[0-9a-fA-F_]+)$"),
+                  ("tag:yaml.org,2002:float", r"^[-+]?(?:[0-9][0-9_]*)\.[0-9_]*(?:[eE][-+][0-9]+)?$|^[-+]?\.[0-9_]+"
+                                              r"(?:[eE][-+][0-9]+)?$|^[-+]?\.(?:inf|Inf|INF)$|^\.(?:nan|NaN|NAN)$")):
+    import re as _re
+
+    _Loader.add_implicit_resolver(_tag, _re.compile(_rx), list("-+0123456789."))
+
+
+def yaml_load(text: str) -> Any:
+    return yaml.load(text, Loader=_Loader)
+
+
 def _merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
     out = copy.deepcopy(base)
     for key, value in override.items():
@@ -339,7 +361,7 @@ def load_project(path: Path | str, subtitle_set: str | None = None,
                  global_doc: dict[str, Any] | None = None) -> CompiledProject:
     path = Path(path)
     try:
-        raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+        raw = yaml_load(path.read_text(encoding="utf-8"))
     except yaml.YAMLError as exc:
         raise ProjectError(f"{path}: invalid YAML: {exc}") from exc
     if global_doc is None:

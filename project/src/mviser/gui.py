@@ -67,6 +67,9 @@ class PreviewApp:
         settings_menu.add_command(label="Project settings…", command=lambda: self.open_settings("project"))
         settings_menu.add_command(label="Global settings…", command=lambda: self.open_settings("global"))
         menu.add_cascade(label="Settings", menu=settings_menu)
+        window_menu = tk.Menu(menu, tearoff=False)
+        window_menu.add_command(label="Subtitle editor…", accelerator="Ctrl+L", command=self.open_lyric_editor)
+        menu.add_cascade(label="Window", menu=window_menu)
         self.view_menu = tk.Menu(menu, tearoff=False)
         menu.add_cascade(label="View", menu=self.view_menu)
         help_menu = tk.Menu(menu, tearoff=False)
@@ -110,6 +113,7 @@ class PreviewApp:
         r.bind("<Home>", lambda _e: self._nav(lambda: self.c.seek(0)))
         r.bind("<F5>", lambda _e: self.reload())
         r.bind("<Control-o>", lambda _e: self.open_dialog())
+        r.bind("<Control-l>", lambda _e: self.open_lyric_editor())
         r.bind("m", lambda _e: self.toggle_mute())
         r.bind("g", lambda _e: (self.show_guides.set(not self.show_guides.get()), self.refresh()))
 
@@ -209,6 +213,20 @@ class PreviewApp:
         else:
             doc = SettingsDocument(global_path(), "global")
         SettingsWindow(self.root, doc, on_saved=self.reload)
+
+    def open_lyric_editor(self) -> None:
+        from .lyric_editor import LyricDocument, LyricEditError
+        from .lyric_window import LyricWindow
+
+        if not self.c.path:
+            return
+        try:
+            doc = LyricDocument(self.c.path, self.c.subtitle_set, load_global())
+        except (LyricEditError, ValueError) as exc:
+            self.status.configure(text=f"Subtitle editor: {exc}", foreground="#b00020")
+            return
+        LyricWindow(self.root, doc, current_frame=lambda: self.c.frame,
+                    seek=lambda f: self._nav(lambda: self.c.seek(f)), on_saved=self.reload)
 
     def reload(self) -> None:
         if self.c.path:

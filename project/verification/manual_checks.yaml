@@ -85,6 +85,15 @@ checks:
     expected: "Text layers are transparent outside the glyphs in AE and AviUtl; layers stay in sync with the audio-bearing full render"
     status: pending
     result: ""
+  - id: subtitle-editor
+    area: gui
+    from: "#25"
+    steps:
+      - "GUI: Window → Subtitle editor (Ctrl+L); play, pause at a phrase start, type text, Add at playhead, Save"
+      - "Select a line, move the playhead, Set time = playhead, Save; open the YAML in an editor"
+    expected: "Preview and timeline update after Save; YAML keeps comments, new times are quoted \"M:B.bb\" and land on the same frame"
+    status: pending
+    result: ""
   - id: midi-fl
     area: input
     from: "#2 (MVP-1)"

@@ -47,6 +47,7 @@ Status: provisional (MViser#2 MVP-0). Long-term concept baseline: MViser#1.
 | `side_text.py` | repeated side-text tiling geometry and validation (MViser#19) |
 | `gui_state.py` | recent project list (update / prune / persist) |
 | `guides.py` | guideline overlay geometry |
+| `lyric_editor.py` / `lyric_window.py` | lyric CRUD over the project YAML / Tk view (MViser#25) |
 | `audio_player.py` | FFmpeg PCM decode, `sounddevice` output, audio-master clock, silent fallback (MViser#12) |
 
 ## Project schema (`schema_version: 1`)
@@ -184,6 +185,13 @@ the canvas, never into frames).
 yuva444p10le, PCM audio) and `--format webm` (VP9 yuva420p, Opus) carry alpha; `mp4` is opaque and composites over
 black with a warning. `--split-layers` writes one output per layer (`_<layer>` suffix, no audio) for separate
 AE / AviUtl tracks (one render pass per layer).
+
+Subtitle editor (MViser#25, Window → Subtitle editor / Ctrl+L): lists the active subtitle set's lyrics; *Add at
+playhead*, *Set time = playhead*, *Update text*, *Delete*, *Save* (validated, comments preserved); double-click seeks.
+New times are written as quoted `"M:B.bb"` (tempo mode) or seconds, always mapping back to the same frame.
+
+YAML note: the loader disables YAML 1.1 base-60 numbers, so unquoted `at: 3:1` is read as measure 3 beat 1 (PyYAML
+would otherwise read 181). Quoting is still recommended for other YAML tools.
 
 ## Settings layers (MViser#16)
 

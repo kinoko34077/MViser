@@ -1,6 +1,6 @@
 # Current State
 
-Last verified: 2026-09-27 — main 1173dfb green; multiple subtitle sets (MViser#8) in PR
+Last verified: 2026-09-27 — main e0b55ef green; preview GUI (MViser#10) in PR; Japanese ruby rendering visually confirmed with IPA Gothic
 
 ## Implemented
 
@@ -16,8 +16,10 @@ Last verified: 2026-09-27 — main 1173dfb green; multiple subtitle sets (MViser
 - Automatic per-root chord colours with explicit overrides.
 - Lyric track with ruby rendering (align center/left/right, scale) and vertical text; per-event position (MViser#6).
 - Multiple subtitle sets with per-set lyric style; `--subtitle-set`, `--all-subtitle-sets` (MViser#8).
-- CLI: `inspect`, `frame`, `render` (range `--start/--end`, `--frames`, `--no-audio`, `--subtitle-set`, `--all-subtitle-sets`).
-- 74 unit / E2E tests covering all eight MViser#2 verification units, the harmony layer, MIDI import, style rules, lyric layout and subtitle sets.
+- Preview GUI (tkinter): seek, timeline, playback without audio, auto-reload, export, subtitle set switch (MViser#10).
+- CJK font discovery (Windows / macOS / Linux IPA, Noto, WenQuanYi, fontconfig).
+- CLI: `inspect`, `frame`, `render`, `gui` (range `--start/--end`, `--frames`, `--no-audio`, `--subtitle-set`, `--all-subtitle-sets`).
+- 84 unit / E2E tests covering all eight MViser#2 verification units, the harmony layer, MIDI import, style rules, lyric layout, subtitle sets and the preview controller.
 
 ## MViser#2 MVP-0 / MVP-1 acceptance
 
@@ -26,7 +28,8 @@ SceneState-based background+label, enter animation, frame sequence, audio MP4, b
 
 ## Known issues / constraints
 
-- Lyrics require a CJK font; on systems without Noto CJK / Yu Gothic / Meiryo set `style.font_path`.
+- Lyrics need a CJK font; auto-discovered on Windows / macOS / common Linux fonts, otherwise set `style.font_path`.
+- GUI playback has no audio yet; the Linux Python used in the build container lacks tkinter (GUI smoke run with system Python 3.12 + Xvfb).
 - Fixed BPM, 4/4, single audio file; WAV duration auto-detected, other formats need `project.duration`.
 - Vertical text: no rotation of long-vowel marks / punctuation, no tate-chu-yoko.
 - KiNoTch. Runtime not integrated (see ADR 0001).
@@ -37,7 +40,7 @@ SceneState-based background+label, enter animation, frame sequence, audio MP4, b
 
 1. KiNoTch. review of the rendered sample look (colours, font sizes, motion feel).
 2. Try MIDI import with real FL Studio exports; tune `window` / `min_duration` defaults.
-3. Then #1 Priority A items: GUI preview / timeline window (tkinter), settings window.
+3. Audio playback synced to the preview; then settings window (#1 Priority A).
 
 ## Verification
 

@@ -90,6 +90,15 @@ def cmd_render(args) -> int:
     return 0
 
 
+def cmd_gui(args) -> int:
+    try:
+        from .gui import run
+    except ImportError as exc:  # tkinter missing (some Linux Pythons)
+        print(f"[mviser] error: GUI needs tkinter: {exc}", file=sys.stderr)
+        return 2
+    return run(args.project, args.subtitle_set)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="mviser", description="MViser MVP-0 renderer")
     parser.add_argument("--version", action="version", version=f"mviser {__version__}")
@@ -116,6 +125,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--no-audio", action="store_true")
     p.add_argument("--all-subtitle-sets", action="store_true", help="one output per subtitle set (_<name> suffix)")
     p.set_defaults(func=cmd_render)
+    p = sub.add_parser("gui", help="preview window with timeline seek")
+    p.add_argument("project", nargs="?")
+    p.set_defaults(func=cmd_gui)
+
     for sub_parser in sub.choices.values():
         sub_parser.add_argument("--subtitle-set", help="active subtitle set (default: project.subtitle_set or first)")
     return parser

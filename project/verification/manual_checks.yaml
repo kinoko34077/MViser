@@ -103,6 +103,16 @@ checks:
     expected: "Second lyric is vertical too; readout switches format; project info lists title, bpm/key, fps/resolution, duration, counts, sets, audio"
     status: pending
     result: ""
+  - id: handoff
+    area: output
+    from: "#29"
+    steps:
+      - "python project/tools/run_mviser.py handoff project/samples/sample.mvproj.yaml -o project/output/handoff"
+      - "AviUtl: drag sample.exo onto the exedit timeline (L-SMASH Works input plugin needed for .mov)"
+      - "After Effects: File → Scripts → Run Script File… → sample.jsx"
+    expected: "AviUtl shows 3 layered video objects + audio with transparency, correct length/fps; AE creates a comp with the layers in order and audio. If exedit rejects keys, note which (templates in project/src/mviser/templates/ are edited)"
+    status: pending
+    result: ""
   - id: midi-fl
     area: input
     from: "#2 (MVP-1)"

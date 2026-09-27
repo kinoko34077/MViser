@@ -1,6 +1,6 @@
 # Current State
 
-Last verified: 2026-09-27 — main 7002221 green; editor handoff (MViser#29) in PR
+Last verified: 2026-09-27 — main 88d6e9a green; dark theme / GUI prefs (MViser#31) in PR
 
 ## Implemented
 
@@ -17,6 +17,7 @@ Last verified: 2026-09-27 — main 7002221 green; editor handoff (MViser#29) in 
 - Lyric track with ruby rendering (align center/left/right, scale) and vertical text; per-event position (MViser#6).
 - Multiple subtitle sets with per-set lyric style; `--subtitle-set`, `--all-subtitle-sets` (MViser#8).
 - Preview GUI (tkinter): seek, timeline, playback with synced audio (sounddevice, silent fallback, mute), auto-reload, export, subtitle set switch (MViser#10).
+- Dark theme; GUI preferences (theme, time mode, guides, chord colours) remembered (MViser#31).
 - Editor handoff: split alpha layers + AviUtl .exo + AE .jsx from editable templates (MViser#29; exedit keys unverified).
 - `follow` for lyric vertical / ruby_align / position; GUI time display modes; Help → Project info (MViser#27).
 - Subtitle editor window (add / retime / edit / delete at the playhead) (MViser#25).
@@ -28,7 +29,7 @@ Last verified: 2026-09-27 — main 7002221 green; editor handoff (MViser#29) in 
 - Global / Project settings layers and settings window with override toggles (MViser#16).
 - CJK font discovery (Windows / macOS / Linux IPA, Noto, WenQuanYi, fontconfig).
 - CLI: `inspect`, `frame`, `render`, `gui` (range `--start/--end`, `--frames`, `--no-audio`, `--subtitle-set`, `--all-subtitle-sets`).
-- 140 unit / E2E tests covering all eight MViser#2 verification units, the harmony layer, MIDI import, style rules, lyric layout, subtitle sets, the preview controller and the audio player.
+- 142 unit / E2E tests covering all eight MViser#2 verification units, the harmony layer, MIDI import, style rules, lyric layout, subtitle sets, the preview controller and the audio player.
 
 ## MViser#2 MVP-0 / MVP-1 acceptance
 
@@ -54,7 +55,7 @@ Real-hardware checks are tracked in MViser#14; the canonical list is `project/ve
 
 1. KiNoTch. review of the rendered sample look (colours, font sizes, motion feel).
 2. Try MIDI import with real FL Studio exports; tune `window` / `min_duration` defaults.
-3. #1 Priority D candidates: AviUtl .exo / AE import helpers, dark theme, integrated panels; tune from #14 feedback.
+3. #1 Priority D: integrated panels (single-window layout); then tune everything from MViser#14 feedback.
 
 ## Verification
 

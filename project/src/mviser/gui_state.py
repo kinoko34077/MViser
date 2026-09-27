@@ -42,3 +42,43 @@ def save_recent(recent: list[str], path: Path | None = None) -> None:
         path.write_text(json.dumps({"recent": recent}, ensure_ascii=False, indent=2), encoding="utf-8")
     except OSError:
         pass  # recent files are a convenience; never block the GUI
+
+
+# -- preferences (MViser#31) ------------------------------------------------------
+PREF_DEFAULTS = {"theme": "light", "time_mode": "absolute", "guides": False, "chord_colors": True}
+PREF_CHOICES = {"theme": ("light", "dark"), "time_mode": ("absolute", "tempo", "frames")}
+
+
+def prefs_path() -> Path:
+    return global_path().parent / "gui_prefs.json"
+
+
+def validate_prefs(data) -> dict:
+    prefs = dict(PREF_DEFAULTS)
+    if not isinstance(data, dict):
+        return prefs
+    for key, default in PREF_DEFAULTS.items():
+        value = data.get(key, default)
+        if key in PREF_CHOICES and value not in PREF_CHOICES[key]:
+            continue
+        if isinstance(default, bool) and not isinstance(value, bool):
+            continue
+        prefs[key] = value
+    return prefs
+
+
+def load_prefs(path: Path | None = None) -> dict:
+    path = prefs_path() if path is None else path
+    try:
+        return validate_prefs(json.loads(path.read_text(encoding="utf-8")))
+    except (OSError, ValueError):
+        return dict(PREF_DEFAULTS)
+
+
+def save_prefs(prefs: dict, path: Path | None = None) -> None:
+    path = prefs_path() if path is None else path
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(validate_prefs(prefs), indent=2), encoding="utf-8")
+    except OSError:
+        pass

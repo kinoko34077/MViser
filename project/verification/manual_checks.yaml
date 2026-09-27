@@ -113,6 +113,14 @@ checks:
     expected: "AviUtl shows 3 layered video objects + audio with transparency, correct length/fps; AE creates a comp with the layers in order and audio. If exedit rejects keys, note which (templates in project/src/mviser/templates/ are edited)"
     status: pending
     result: ""
+  - id: theme-prefs
+    area: gui
+    from: "#31"
+    steps:
+      - "GUI: View → Theme: dark, View → Time: tempo, press G; close and reopen the GUI"
+    expected: "Dark theme is readable (buttons, tables, status bar, subtitle editor, settings); theme / time mode / guides are restored after restart"
+    status: pending
+    result: ""
   - id: midi-fl
     area: input
     from: "#2 (MVP-1)"

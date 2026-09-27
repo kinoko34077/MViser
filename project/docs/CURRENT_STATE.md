@@ -36,6 +36,11 @@ SceneState-based background+label, enter animation, frame sequence, audio MP4, b
 - Function analysis is a first cut (no key detection, secondary dominants reported as chromatic).
 - "Music-dsl" repository not found; μChordbot DSL spec used as reference.
 
+## Manual verification
+
+Real-hardware checks are tracked in MViser#14; the canonical list is `project/verification/manual_checks.yaml`
+(`python project/tools/manual_check.py [--prepare|--markdown]`).
+
 ## Next work
 
 1. KiNoTch. review of the rendered sample look (colours, font sizes, motion feel).

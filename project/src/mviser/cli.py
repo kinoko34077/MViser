@@ -134,6 +134,14 @@ def cmd_handoff(args) -> int:
     return 0
 
 
+def cmd_audit(args: argparse.Namespace) -> int:
+    from .audit import AuditContext, run_audit
+
+    ctx = AuditContext(Path(args.out), gui=args.gui)
+    report = run_audit(ctx, only=args.only.split(",") if args.only else None, echo=print)
+    return 1 if report["conclusion"].startswith("FAIL") else 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="mviser", description="MViser — music-synchronised MV material generator")
     parser.add_argument("--version", action="version", version=f"mviser {__version__}")
@@ -177,6 +185,13 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("gui", help="preview window with timeline seek")
     p.add_argument("project", nargs="?")
     p.set_defaults(func=cmd_gui)
+
+    p = sub.add_parser("audit", help="automated audit: PASS/WARN/FAIL + JSON report (MViser#38)")
+    p.add_argument("--out", default="output/audit")
+    p.add_argument("--only", help="comma-separated check ids")
+    p.add_argument("--gui", choices=["auto", "on", "off"], default="auto",
+                   help="auto: WARN when no display; on: FAIL when no display")
+    p.set_defaults(func=cmd_audit)
 
     for sub_parser in sub.choices.values():
         sub_parser.add_argument("--subtitle-set", help="active subtitle set (default: project.subtitle_set or first)")

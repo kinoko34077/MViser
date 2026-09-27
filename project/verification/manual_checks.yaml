@@ -1,11 +1,13 @@
 # Manual verification checklist (canonical). Edit this file, not the Issue:
 #   python project/tools/manual_check.py --markdown   -> paste into the tracking Issue
+# automated_by: audit check that reproduces this without a human; boundary: what only a human can still confirm
 # status: pending | ok | ng | skip   (record details in `result`)
 schema_version: 1
 tracking_issue: 14
 environment_hint: "Windows 10/11, Python 3.10+ (python.org build with tkinter), after `knt.cmd setup`"
 checks:
   - id: jp-font
+    automated_by: "mviser audit --only jp-font"
     priority: high
     area: rendering
     from: "#6, #10"
@@ -17,6 +19,7 @@ checks:
     status: pending
     result: ""
   - id: gui-basic
+    automated_by: "mviser audit --only gui-basic"
     area: gui
     from: "#10"
     steps:
@@ -27,6 +30,8 @@ checks:
     status: pending
     result: ""
   - id: gui-audio
+    automated_by: "mviser audit --only gui-audio"
+    boundary: "audible output on a real device (CI has no sound card; the audit asserts clock ratio when a device exists)"
     priority: high
     area: audio
     from: "#12"
@@ -36,6 +41,7 @@ checks:
     status: pending
     result: ""
   - id: gui-export
+    automated_by: "mviser audit --only gui-export"
     area: gui
     from: "#10"
     steps:
@@ -44,6 +50,7 @@ checks:
     status: pending
     result: ""
   - id: gui-settings
+    automated_by: "mviser audit --only gui-settings"
     area: gui
     from: "#16"
     steps:
@@ -53,6 +60,7 @@ checks:
     status: pending
     result: ""
   - id: gui-waveform
+    automated_by: "mviser audit --only gui-waveform"
     area: gui
     from: "#18"
     steps:
@@ -61,6 +69,7 @@ checks:
     status: pending
     result: ""
   - id: side-text
+    automated_by: "mviser audit --only side-text"
     area: rendering
     from: "#19"
     steps:
@@ -69,6 +78,7 @@ checks:
     status: pending
     result: ""
   - id: gui-conveniences
+    automated_by: "mviser audit --only gui-conveniences"
     area: gui
     from: "#20"
     steps:
@@ -78,6 +88,7 @@ checks:
     status: pending
     result: ""
   - id: alpha-layers
+    automated_by: "mviser audit --only alpha-layers"
     area: output
     from: "#23"
     steps:
@@ -88,6 +99,7 @@ checks:
     status: pending
     result: ""
   - id: subtitle-editor
+    automated_by: "mviser audit --only subtitle-editor"
     area: gui
     from: "#25"
     steps:
@@ -97,6 +109,7 @@ checks:
     status: pending
     result: ""
   - id: follow-timeinfo
+    automated_by: "mviser audit --only follow-timeinfo"
     area: gui
     from: "#27"
     steps:
@@ -106,6 +119,8 @@ checks:
     status: pending
     result: ""
   - id: handoff
+    automated_by: "mviser audit --only handoff"
+    boundary: "executing the .exo in AviUtl and the .jsx in After Effects"
     priority: high
     area: output
     from: "#29"
@@ -117,6 +132,7 @@ checks:
     status: pending
     result: ""
   - id: theme-prefs
+    automated_by: "mviser audit --only theme-prefs"
     area: gui
     from: "#31"
     steps:
@@ -125,6 +141,7 @@ checks:
     status: pending
     result: ""
   - id: side-panel
+    automated_by: "mviser audit --only side-panel"
     area: gui
     from: "#33"
     steps:
@@ -134,6 +151,8 @@ checks:
     status: pending
     result: ""
   - id: midi-fl
+    automated_by: "mviser audit --only midi-fl"
+    boundary: "a MIDI file actually exported from FL Studio (audit uses an FL-like synthetic file)"
     priority: high
     area: input
     from: "#2 (MVP-1)"
@@ -145,6 +164,8 @@ checks:
     status: pending
     result: ""
   - id: aviutl-ae
+    automated_by: "mviser audit --only aviutl-ae"
+    boundary: "the AviUtl / AE import dialogs themselves"
     area: output
     from: "#1 workflow"
     steps:

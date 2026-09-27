@@ -42,11 +42,12 @@ Windows pwsh / Windows PowerShell 5.1; `knt doctor` OK. Version 0.2.0.
 | #2 MVP-0 / MVP-1 | done |
 | #4 #6 #8 #10 #12 #16 #18 #19 #20 #23 #25 #27 #31 #33 #35 | done (closed by their PRs) |
 | #29 editor handoff | done (closed by PR #30); exedit keys are confirmed via #14 `handoff` |
-| #14 manual verification | open — waiting for real-hardware results (16 checks, priorities in the checklist) |
+| #14 manual verification | open — 12 of 16 checks now automated by `mviser audit`; 4 residual boundaries (audio audibility, AviUtl/AE execution ×2, real FL export) |
+| #38 automated audit | `mviser audit` + workflow *MViser audit* (ADR 0005, `REVIEW_PROTOCOL.md`) |
 
 ## Known issues / constraints
 
-- Not yet verified on real hardware: audio output, Windows fonts / look, AviUtl `.exo` keys, AE `.jsx`, FL Studio MIDI (MViser#14).
+- Machine-verified by `mviser audit` (Linux Xvfb + Windows CI): fonts/ruby, A/V sync, exports, alpha, GUI behaviour. Still human-only: audible output, running .exo/.jsx inside AviUtl/AE, a real FL Studio MIDI export (MViser#14).
 - Fixed BPM, 4/4, single audio file; WAV duration auto-detected, other formats need `project.duration`.
 - Vertical text: no rotation of long-vowel marks / punctuation, no tate-chu-yoko.
 - Function analysis is a first cut (no key detection; secondary dominants reported as chromatic).
@@ -57,7 +58,8 @@ Windows pwsh / Windows PowerShell 5.1; `knt doctor` OK. Version 0.2.0.
 ## Manual verification
 
 Canonical list: `project/verification/manual_checks.yaml` (`python project/tools/manual_check.py [--prepare|--markdown]`),
-generated into MViser#14. High-priority checks are listed first there.
+generated into MViser#14. Each check carries `automated_by` (and `boundary` if a human part remains);
+#14 lists only the residual boundaries. Automated audit: `python project/tools/run_mviser.py audit` — see `REVIEW_PROTOCOL.md`.
 
 ## Next work
 

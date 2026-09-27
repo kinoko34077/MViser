@@ -23,6 +23,7 @@ python project/tools/run_mviser.py render  project/samples/sample.mvproj.yaml -o
 python project/tools/run_mviser.py render  project/samples/sample.mvproj.yaml --frames project/output/frames --start 4 --end 8
 python project/tools/run_mviser.py render  project/samples/sample.mvproj.yaml --layers chords,lyrics --format prores4444 -o project/output/text.mov
 python project/tools/run_mviser.py handoff project/samples/sample.mvproj.yaml -o project/output/handoff   # AviUtl .exo + AE .jsx
+python project/tools/run_mviser.py audit --out project/output/audit   # automated PASS/WARN/FAIL audit + JSON report (MViser#38)
 ```
 
 Options: `--subtitle-set NAME`, `--all-subtitle-sets`, `--split-layers`, `--no-audio`. Input formats, schema and GUI keys: [SPEC](project/docs/SPEC.md).

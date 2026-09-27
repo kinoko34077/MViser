@@ -46,6 +46,17 @@ def to_markdown(data: dict) -> str:
         f"Environment: {data.get('environment_hint', '')}",
         "",
     ]
+    auto = [c for c in data["checks"] if c.get("automated_by") and not c.get("boundary")]
+    if auto:
+        lines += ["### Automated (no human action needed)", "",
+                  "Reproduced by `python project/tools/run_mviser.py audit` (CI: MViser audit workflow, JSON report "
+                  "artifact); see `project/docs/REVIEW_PROTOCOL.md`.", ""]
+        lines += [f"- **{c['id']}** — `{c['automated_by']}`" for c in auto]
+        lines.append("")
+    residual = [c for c in data["checks"] if c not in auto]
+    data = {**data, "checks": residual}
+    if auto:
+        lines += ["### Residual boundaries (human check still required)", ""]
     high = [c for c in data["checks"] if c.get("priority") == "high" and c["status"] in ("pending", "ng")]
     if high:
         lines += ["### Priority (please check these first)", ""]
@@ -57,6 +68,8 @@ def to_markdown(data: dict) -> str:
         for step in c["steps"]:
             lines.append(f"  - `{step}`" if step.startswith("python") else f"  - {step}")
         lines.append(f"  - Expected: {c['expected']}")
+        if c.get("boundary"):
+            lines.append(f"  - Only this remains for a human: {c['boundary']} (rest: `{c['automated_by']}`)")
         if c.get("result"):
             lines.append(f"  - Result: {c['result']}")
     lines += ["", "Report results as a comment (id + ok/ng + notes); the agent updates the YAML and this body."]

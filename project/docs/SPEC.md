@@ -51,6 +51,7 @@ Status: provisional (MViser#2 MVP-0). Long-term concept baseline: MViser#1.
 | `time_format.py` / `project_info.py` | time display modes / project info rows (MViser#27) |
 | `handoff.py` + `templates/` | AviUtl .exo / AE .jsx generation from split layers (MViser#29) |
 | `theme.py` | light / dark palettes (WCAG ≥ 4.5:1 status colours), ttk styling (MViser#31) |
+| `chord_list.py` | chord list rows / current row for the side panel (MViser#33) |
 | `audio_player.py` | FFmpeg PCM decode, `sounddevice` output, audio-master clock, silent fallback (MViser#12) |
 
 ## Project schema (`schema_version: 1`)
@@ -209,6 +210,11 @@ background on the bottom row — plus the audio object) and `<name>.jsx` (After 
 duration, layers imported bottom → top, audio). Both come from templates in `project/src/mviser/templates/`
 (`aviutl.exo.tmpl`, `aviutl_video_object.tmpl`, `aviutl_audio_object.tmpl`, `after_effects.jsx.tmpl`); exedit keys are
 unverified until MViser#14 `handoff`, and are fixed by editing the templates.
+
+Integrated panels (MViser#33): the main window is a horizontal split — preview / timeline / transport on the left,
+a side notebook on the right with **Subtitles** (the subtitle editor, docked) and **Chords** (time, chord, roman,
+function; double-click seeks; current chord highlighted). View → Side panel / `F9`; visibility and width persist in
+`gui_prefs.json`. Global shortcuts are ignored while a text field, combobox or list has focus.
 
 ## Settings layers (MViser#16)
 

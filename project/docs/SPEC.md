@@ -46,6 +46,7 @@ schema_version: 1
 project:
   title: str                 # default "Untitled"
   key: "C" | "Am" | null     # needed by degree notation and the function analyzer
+  subtitle_set: name | null  # active subtitle set (default: first); CLI --subtitle-set overrides
   bpm: number > 0            # default 120, fixed tempo
   fps: int > 0               # default 30
   resolution: [w, h]         # even integers, default [1920, 1080]
@@ -93,6 +94,10 @@ events:                      # common time-range model
     pulse: number            # chord only: overrides rule / motion.pulse
     ruby_align / vertical / position   # lyric only: per-event overrides
 chords: [{at, chord, ...}]   # shorthand → events(type: chord)
+subtitle_sets:               # MViser#8: same timeline, different lyrics / lyric style
+  - name: str                # unique; legacy top-level `lyrics:` becomes set "default" (first)
+    lyrics: [{at, text, ...}]
+    style: {lyric_font_size, ruby_scale, ruby_align, vertical, lyric_position, font_path, text_color}
 lyrics: [{at, text, ...}]    # shorthand → events(type: lyric)
 ```
 
@@ -128,6 +133,8 @@ and fails open to `UNKNOWN` with the raw pitch set (`display: "?(C-C#-D)"`). `fu
 - Colour priority: event `color` → `chord_colors[raw]` → `[display]` → `[roman]` → `[root(+m)]` → `[root]` → first matching `style.rules` → auto colour (hue = root cents / 1200) → `background_color`.
 - Motion / pulse priority: event value → matching rule → `motion.*`. Rule `text_color` applies to the chord label frame (lyrics too).
 - Animations use event-local time; `beat_phase = ((t - offset)/(60/bpm)) % 1`.
+- Only the active subtitle set's lyrics are compiled; chords and timeline are identical across sets.
+  `render --all-subtitle-sets` writes one output per set (`out_<name>.mp4`, `frames/<name>/`).
 - Range export (`--start/--end`) seeks audio by `audio.start + start`; PNG files are named by absolute frame number.
 
 ## Exceptions / Fallback

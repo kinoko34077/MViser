@@ -56,3 +56,13 @@ lyrics:
   - at: "5:1"
     text: "夢《ゆめ》の中《なか》"
     vertical: true
+
+subtitle_sets:             # lyrics above are set "default"; select with --subtitle-set en
+  - name: en
+    lyrics:
+      - at: "2:1"
+        text: "Longing"
+      - at: "5:1"
+        text: "Inside a dream"
+    style:
+      lyric_font_size: 48

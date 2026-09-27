@@ -1,6 +1,6 @@
 # Current State
 
-Last verified: 2026-09-27 — main 3685c24 green; ruby / vertical lyrics (MViser#6) in PR
+Last verified: 2026-09-27 — main 1173dfb green; multiple subtitle sets (MViser#8) in PR
 
 ## Implemented
 
@@ -15,8 +15,9 @@ Last verified: 2026-09-27 — main 3685c24 green; ruby / vertical lyrics (MViser
 - Motion presets `cut` / `fade` / `slide`, beat-phase `pulse`, per-event override.
 - Automatic per-root chord colours with explicit overrides.
 - Lyric track with ruby rendering (align center/left/right, scale) and vertical text; per-event position (MViser#6).
-- CLI: `inspect`, `frame`, `render` (range `--start/--end`, `--frames`, `--no-audio`).
-- 67 unit / E2E tests covering all eight MViser#2 verification units, the harmony layer, MIDI import, style rules and lyric layout.
+- Multiple subtitle sets with per-set lyric style; `--subtitle-set`, `--all-subtitle-sets` (MViser#8).
+- CLI: `inspect`, `frame`, `render` (range `--start/--end`, `--frames`, `--no-audio`, `--subtitle-set`, `--all-subtitle-sets`).
+- 74 unit / E2E tests covering all eight MViser#2 verification units, the harmony layer, MIDI import, style rules, lyric layout and subtitle sets.
 
 ## MViser#2 MVP-0 / MVP-1 acceptance
 
@@ -36,7 +37,7 @@ SceneState-based background+label, enter animation, frame sequence, audio MP4, b
 
 1. KiNoTch. review of the rendered sample look (colours, font sizes, motion feel).
 2. Try MIDI import with real FL Studio exports; tune `window` / `min_duration` defaults.
-3. Then #1 Priority A/B items (multiple subtitle sets, GUI preview).
+3. Then #1 Priority A items: GUI preview / timeline window (tkinter), settings window.
 
 ## Verification
 

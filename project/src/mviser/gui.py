@@ -12,7 +12,9 @@ from PIL import ImageTk
 
 from . import __version__
 from .audio_player import AudioPlayer
+from .global_settings import global_path, load_global
 from .preview_controller import PreviewController
+from .settings_model import SettingsDocument
 
 TIMELINE_HEIGHT = 64
 POLL_MS = 700
@@ -51,6 +53,10 @@ class PreviewApp:
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self.root.destroy)
         menu.add_cascade(label="File", menu=file_menu)
+        settings_menu = tk.Menu(menu, tearoff=False)
+        settings_menu.add_command(label="Project settings…", command=lambda: self.open_settings("project"))
+        settings_menu.add_command(label="Global settings…", command=lambda: self.open_settings("global"))
+        menu.add_cascade(label="Settings", menu=settings_menu)
         self.view_menu = tk.Menu(menu, tearoff=False)
         menu.add_cascade(label="View", menu=self.view_menu)
         help_menu = tk.Menu(menu, tearoff=False)
@@ -141,6 +147,22 @@ class PreviewApp:
         path = filedialog.askopenfilename(filetypes=[("MViser project", "*.yaml *.yml"), ("All", "*.*")])
         if path:
             self._after_load(self.c.load(path))
+
+    def open_settings(self, layer: str) -> None:
+        from .settings_window import SettingsWindow
+
+        try:
+            global_doc = load_global()
+        except ValueError as exc:
+            self.status.configure(text=f"Global settings error: {exc}", foreground="#b00020")
+            return
+        if layer == "project":
+            if not self.c.path:
+                return
+            doc = SettingsDocument(self.c.path, "project", global_doc)
+        else:
+            doc = SettingsDocument(global_path(), "global")
+        SettingsWindow(self.root, doc, on_saved=self.reload)
 
     def reload(self) -> None:
         if self.c.path:

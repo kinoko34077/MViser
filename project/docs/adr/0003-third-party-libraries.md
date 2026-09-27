@@ -9,7 +9,7 @@ Custom code is kept only where MViser-specific meaning lives (timeline→frame, 
 
 Current dependencies: Pillow (drawing), PyYAML (project file), imageio-ffmpeg (FFmpeg binary), **mido** (MIDI),
 **numpy + sounddevice** (preview audio; PortAudio bundled in Windows/macOS wheels, optional at runtime).
-tkinter (stdlib) for the GUI.
+tkinter (stdlib) for the GUI. **ruamel.yaml** for comment-preserving edits of project / global YAML.
 
 MIDI reading uses `mido` (pure Python, tempo-map aware `merge_tracks`/`tick2second`). Alternatives:
 

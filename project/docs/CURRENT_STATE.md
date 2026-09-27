@@ -41,8 +41,8 @@ Windows pwsh / Windows PowerShell 5.1; `knt doctor` OK. Version 0.2.0.
 | #1 concept baseline | all items implemented (status table on #1); kept open as the long-term reference |
 | #2 MVP-0 / MVP-1 | done |
 | #4 #6 #8 #10 #12 #16 #18 #19 #20 #23 #25 #27 #31 #33 #35 | done (closed by their PRs) |
+| #29 editor handoff | done (closed by PR #30); exedit keys are confirmed via #14 `handoff` |
 | #14 manual verification | open — waiting for real-hardware results (16 checks, priorities in the checklist) |
-| #29 editor handoff | implemented; open until #14 `handoff` confirms the exedit keys |
 
 ## Known issues / constraints
 
@@ -61,6 +61,6 @@ generated into MViser#14. High-priority checks are listed first there.
 
 ## Next work
 
-1. Collect MViser#14 results; fix templates / defaults accordingly (close #29 when `handoff` passes).
+1. Collect MViser#14 results; fix templates / defaults accordingly (a failed `handoff` check reopens work on #29).
 2. Tune MIDI `window` / `min_duration` with real FL Studio exports.
 3. Candidates: chord editing in the GUI, advanced animation, variable tempo / time signatures.

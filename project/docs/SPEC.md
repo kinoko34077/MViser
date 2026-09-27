@@ -193,6 +193,7 @@ AE / AviUtl tracks (one render pass per layer).
 
 Subtitle editor (MViser#25, Window → Subtitle editor / Ctrl+L): lists the active subtitle set's lyrics; *Add at
 playhead*, *Set time = playhead*, *Update text*, *Delete*, *Save* (validated, comments preserved); double-click seeks.
+Undo / Redo (buttons, Ctrl+Z / Ctrl+Y) keep up to 100 snapshots per document and survive the reload after Save (MViser#35).
 New times are written as quoted `"M:B.bb"` (tempo mode) or seconds, always mapping back to the same frame.
 
 YAML note: the loader disables YAML 1.1 base-60 numbers, so unquoted `at: 3:1` is read as measure 3 beat 1 (PyYAML

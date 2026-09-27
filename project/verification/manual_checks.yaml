@@ -127,7 +127,7 @@ checks:
     steps:
       - "GUI: side panel on the right; add / edit a lyric in the Subtitles tab and Save; open the Chords tab and double-click rows"
       - "Type spaces in the text field (must not start playback); F9 toggles the panel; resize it, restart the GUI"
-    expected: "Docked editing works like the separate window; chord rows seek and follow playback; panel visibility and width are restored"
+    expected: "Undo / Redo (buttons, Ctrl+Z / Ctrl+Y) step through edits, also after Save; docked editing works like the separate window; chord rows seek and follow playback; panel visibility and width are restored"
     status: pending
     result: ""
   - id: midi-fl

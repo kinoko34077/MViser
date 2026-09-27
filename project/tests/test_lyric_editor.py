@@ -97,3 +97,41 @@ class UnquotedPositionTests(unittest.TestCase):
                         encoding="utf-8")
         events = load_project(path).tracks["chord"].events
         self.assertEqual([e.start_frame for e in events], [120, 202])  # 4.0 s and 6.75 s, not 181 s / 242.5 s
+
+
+class UndoRedoTests(unittest.TestCase):
+    def setUp(self):
+        self.path = Path(tempfile.mkdtemp()) / "p.mvproj.yaml"
+        self.path.write_text(SRC, encoding="utf-8")
+
+    def texts(self, doc):
+        return [r.text for r in doc.rows()]
+
+    def test_undo_redo_cycle(self):
+        doc = LyricDocument(self.path)
+        original = doc.dumps()
+        doc.add(0, "a")
+        doc.update(1, text="b")
+        doc.delete(0)
+        self.assertEqual(self.texts(doc), ["b"])
+        self.assertTrue(doc.undo())
+        self.assertEqual(self.texts(doc), ["a", "b"])
+        self.assertTrue(doc.undo() and doc.undo())
+        self.assertEqual(doc.dumps(), original)  # comments and layout restored exactly
+        self.assertFalse(doc.undo())
+        self.assertTrue(doc.redo())
+        self.assertEqual(self.texts(doc), ["a", "焦《こ》がれ"])
+        doc.add(300, "c")  # new edit clears redo
+        self.assertFalse(doc.can_redo)
+
+    def test_failed_edit_does_not_checkpoint_and_cap(self):
+        doc = LyricDocument(self.path)
+        with self.assertRaises(LyricEditError):
+            doc.add(0, " ")
+        with self.assertRaises(LyricEditError):
+            doc.update(0, text="")
+        self.assertFalse(doc.can_undo)
+        doc.HISTORY_LIMIT = 3
+        for i in range(5):
+            doc.add(i, f"x{i}")
+        self.assertEqual(len(doc._undo), 3)

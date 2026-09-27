@@ -44,6 +44,7 @@ Status: provisional (MViser#2 MVP-0). Long-term concept baseline: MViser#1.
 | `settings_model.py` | field catalogue, layered effective values, comment-preserving YAML edits |
 | `settings_window.py` | tkinter settings Notebook |
 | `waveform.py` | waveform peaks (numpy) and beat grid geometry |
+| `side_text.py` | repeated side-text tiling geometry and validation (MViser#19) |
 | `audio_player.py` | FFmpeg PCM decode, `sounddevice` output, audio-master clock, silent fallback (MViser#12) |
 
 ## Project schema (`schema_version: 1`)
@@ -74,6 +75,8 @@ style:
   ruby_align: center | left | right   # left/right = top/bottom in vertical text
   vertical: false            # vertical lyrics (stacked, ruby on the right)
   lyric_position: [x, y] | null       # fractions; default [0.5, 0.82], vertical [0.88, 0.5]
+  side_text: {side: none|left|right|both, size: 36, spacing: 48, opacity: 0.35, margin: 0.06,
+              scroll: 40, vertical: true}   # MViser#19 repeated margin text (px, px/s, fraction)
   rules:                     # analysis-driven styling (MViser#4), first match wins
     - when: {quality|function|roman|diatonic|microtonal|notation|root: value | [values]}
       set: {background_color, text_color, motion, pulse}
@@ -100,6 +103,8 @@ events:                      # common time-range model
     duration: time           # optional early end
     pulse: number            # chord only: overrides rule / motion.pulse
     ruby_align / vertical / position   # lyric only: per-event overrides
+    repeat_side: none|left|right|both  # lyric only: repeated side text (default style.side_text.side)
+    loop_text: str                     # lyric only: side text instead of the lyric base text
 chords: [{at, chord, ...}]   # shorthand → events(type: chord)
 subtitle_sets:               # MViser#8: same timeline, different lyrics / lyric style
   - name: str                # unique; legacy top-level `lyrics:` becomes set "default" (first)

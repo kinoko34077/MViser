@@ -10,6 +10,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 from .lyric_layout import layout_lyric
+from .side_text import side_centres, tile_offsets
 from .motion import MotionState
 from .scene import SceneState
 
@@ -99,11 +100,36 @@ class Renderer:
             draw.text((cx + g.x, cy + g.y + ascent), g.text, font=font, fill=fill, anchor=anchor)
         image.alpha_composite(layer)
 
+    def _side_text(self, image: Image.Image, state: SceneState) -> None:
+        cfg = self.style["side_text"]
+        text = (state.side_text or "").strip()
+        opacity = float(cfg["opacity"]) * state.lyric_motion.opacity
+        if state.side == "none" or not text or opacity <= 0:
+            return
+        size = max(1, int(cfg["size"]))
+        font = load_font(self.font_path, size)
+        fill = _rgb(state.text_color) + (round(255 * min(opacity, 1.0)),)
+        layer = Image.new("RGBA", image.size, (0, 0, 0, 0))
+        draw = ImageDraw.Draw(layer)
+        vertical = bool(cfg["vertical"])
+        step = size * 1.05
+        unit = len(text) * step if vertical else font.getlength(text)
+        for cx in side_centres(state.side, self.width, float(cfg["margin"])):
+            if vertical:
+                for start in tile_offsets(self.height, unit, float(cfg["spacing"]), state.side_scroll):
+                    for i, ch in enumerate(text):
+                        draw.text((cx, start + i * step), ch, font=font, fill=fill, anchor="mt")
+            else:  # horizontal text rotated along the strip is out of scope; lay runs top-to-bottom
+                for start in tile_offsets(self.height, size * 1.2, float(cfg["spacing"]), state.side_scroll):
+                    draw.text((cx, start), text, font=font, fill=fill, anchor="mt")
+        image.alpha_composite(layer)
+
     def render(self, state: SceneState) -> Image.Image:
         image = Image.new("RGBA", (self.width, self.height), _rgb(state.background_color) + (255,))
         if state.chord_label:
             self._text(image, state.chord_label, (self.width / 2, self.height * 0.42),
                        int(self.style["chord_font_size"]), state.text_color, state.chord_motion, state.chord_scale)
         if state.lyric:
+            self._side_text(image, state)
             self._lyric(image, state)
         return image.convert("RGB")

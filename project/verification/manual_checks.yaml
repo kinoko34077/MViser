@@ -58,6 +58,14 @@ checks:
     expected: "Waveform row under the lyric row matches the song; measure lines and numbers line up with bar starts; playback stays smooth"
     status: pending
     result: ""
+  - id: side-text
+    area: rendering
+    from: "#19"
+    steps:
+      - "python project/tools/run_mviser.py gui project/samples/sample.mvproj.yaml  (play from bar 2)"
+    expected: "Lyric '焦がれ' repeats faintly down both margins and scrolls smoothly; it fades in with the lyric and stops at the next lyric"
+    status: pending
+    result: ""
   - id: midi-fl
     area: input
     from: "#2 (MVP-1)"

@@ -1,0 +1,7 @@
+{
+  "profile": "windows-gui",
+  "description": "Windows GUI。標準menu/file dialog/D&D/progress等を想定。",
+  "surfaces": {
+    "gui_windows": true
+  }
+}

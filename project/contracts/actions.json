@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "actions": [
+    {
+      "id": "project.inspect",
+      "summary": "Load a .mvproj.yaml and return compiled frame-based events.",
+      "behavior": {
+        "side_effect": "read",
+        "cancellable": false
+      }
+    },
+    {
+      "id": "render.frame",
+      "summary": "Render the SceneState at one time/frame to a PNG.",
+      "behavior": {
+        "side_effect": "write",
+        "cancellable": false
+      }
+    },
+    {
+      "id": "render.video",
+      "summary": "Render a frame range to MP4 (with trimmed audio) and/or a PNG sequence.",
+      "behavior": {
+        "side_effect": "write",
+        "cancellable": false
+      }
+    }
+  ]
+}

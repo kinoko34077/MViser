@@ -1,0 +1,7 @@
+{
+  "profile": "mcp",
+  "description": "MCP server/tool。",
+  "surfaces": {
+    "mcp": true
+  }
+}

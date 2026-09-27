@@ -1,0 +1,7 @@
+{
+  "profile": "agent",
+  "description": "Agent orchestration。Action自体はApplication側を共有。",
+  "surfaces": {
+    "agent": true
+  }
+}

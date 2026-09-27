@@ -1,0 +1,7 @@
+{
+  "profile": "cli",
+  "description": "CLIツール。",
+  "surfaces": {
+    "cli": true
+  }
+}

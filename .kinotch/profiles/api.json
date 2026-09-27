@@ -1,0 +1,7 @@
+{
+  "profile": "api",
+  "description": "HTTP API/service。",
+  "surfaces": {
+    "api": true
+  }
+}

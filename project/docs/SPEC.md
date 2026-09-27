@@ -45,6 +45,8 @@ Status: provisional (MViser#2 MVP-0). Long-term concept baseline: MViser#1.
 | `settings_window.py` | tkinter settings Notebook |
 | `waveform.py` | waveform peaks (numpy) and beat grid geometry |
 | `side_text.py` | repeated side-text tiling geometry and validation (MViser#19) |
+| `gui_state.py` | recent project list (update / prune / persist) |
+| `guides.py` | guideline overlay geometry |
 | `audio_player.py` | FFmpeg PCM decode, `sounddevice` output, audio-master clock, silent fallback (MViser#12) |
 
 ## Project schema (`schema_version: 1`)
@@ -169,6 +171,11 @@ is silent on the wall clock and the status bar says why. File menu exports MP4 /
 Timeline (MViser#18): chord row, lyric row, and a waveform row (FFmpeg-decoded 4 kHz mono peaks aligned to the
 project length; silence padding when the audio is shorter) with a beat / measure grid and measure numbers thinned by
 zoom. Static parts are cached and only the playhead is redrawn during playback.
+
+GUI conveniences (MViser#20): File → Recent (10 entries, `recent.json` next to the Global settings file, missing
+files pruned); View → Chord colours (preview-only: background falls back to `style.background_color`; project file and
+exports unchanged); View → Guidelines / `G` (centre cross, rule of thirds, 90 % action / 80 % title safe areas drawn on
+the canvas, never into frames).
 
 ## Settings layers (MViser#16)
 

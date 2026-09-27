@@ -1,6 +1,6 @@
 # Current State
 
-Last verified: 2026-09-27 — main c5af93c green; repeated side text (MViser#19) in PR
+Last verified: 2026-09-27 — main a9f08d4 green; GUI conveniences (MViser#20) in PR
 
 ## Implemented
 
@@ -17,12 +17,13 @@ Last verified: 2026-09-27 — main c5af93c green; repeated side text (MViser#19)
 - Lyric track with ruby rendering (align center/left/right, scale) and vertical text; per-event position (MViser#6).
 - Multiple subtitle sets with per-set lyric style; `--subtitle-set`, `--all-subtitle-sets` (MViser#8).
 - Preview GUI (tkinter): seek, timeline, playback with synced audio (sounddevice, silent fallback, mute), auto-reload, export, subtitle set switch (MViser#10).
+- GUI: recent files, preview-only chord colour toggle, guideline overlay (MViser#20).
 - Repeated side text in the margins, scrolling per lyric event (MViser#19).
 - Timeline waveform row and beat / measure grid (MViser#18).
 - Global / Project settings layers and settings window with override toggles (MViser#16).
 - CJK font discovery (Windows / macOS / Linux IPA, Noto, WenQuanYi, fontconfig).
 - CLI: `inspect`, `frame`, `render`, `gui` (range `--start/--end`, `--frames`, `--no-audio`, `--subtitle-set`, `--all-subtitle-sets`).
-- 113 unit / E2E tests covering all eight MViser#2 verification units, the harmony layer, MIDI import, style rules, lyric layout, subtitle sets, the preview controller and the audio player.
+- 117 unit / E2E tests covering all eight MViser#2 verification units, the harmony layer, MIDI import, style rules, lyric layout, subtitle sets, the preview controller and the audio player.
 
 ## MViser#2 MVP-0 / MVP-1 acceptance
 
@@ -48,7 +49,7 @@ Real-hardware checks are tracked in MViser#14; the canonical list is `project/ve
 
 1. KiNoTch. review of the rendered sample look (colours, font sizes, motion feel).
 2. Try MIDI import with real FL Studio exports; tune `window` / `min_duration` defaults.
-3. #1 Priority C items (chord colour toggle, recent files, guidelines).
+3. #1 Priority D candidates: output format extension (e.g. ProRes 4444 / PNG with alpha for compositing), dark theme, integrated panels.
 
 ## Verification
 

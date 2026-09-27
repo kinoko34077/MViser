@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +29,7 @@ class PreviewController:
         self._wave_pcm = None
         self._wave_key = None
         self._peaks_cache: dict[tuple, object] = {}
+        self.chord_colors = True  # preview-only toggle (MViser#20); exports are unaffected
         if path is not None:
             self.load(path)
 
@@ -130,7 +132,10 @@ class PreviewController:
     def render(self, max_size: tuple[int, int] | None = None) -> Image.Image | None:
         if not self.project or not self.renderer:
             return None
-        image = self.renderer.render(resolve_scene_state(self.project, self.frame))
+        state = resolve_scene_state(self.project, self.frame)
+        if not self.chord_colors:
+            state = replace(state, background_color=self.project.doc["style"]["background_color"])
+        image = self.renderer.render(state)
         if max_size:
             w, h = image.size
             scale = min(max_size[0] / w, max_size[1] / h, 1.0)

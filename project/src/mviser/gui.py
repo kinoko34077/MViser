@@ -14,6 +14,8 @@ from PIL import ImageTk
 from . import __version__
 from .audio_player import AudioPlayer
 from .global_settings import global_path, load_global
+from .gui_state import load_recent, prune_missing, save_recent, update_recent
+from .guides import guide_shapes
 from .preview_controller import PreviewController
 from .settings_model import SettingsDocument
 
@@ -32,12 +34,17 @@ class PreviewApp:
         self.audio = AudioPlayer()
         self._audio_clock = False
         self._note = ""
+        self.recent = prune_missing(load_recent())
+        self.show_guides = tk.BooleanVar(value=False)
+        self.chord_colors = tk.BooleanVar(value=True)
         root.title("MViser")
         root.geometry("1100x760")
         root.minsize(640, 480)
         self._build_menu()
         self._build_body()
         self._bind_keys()
+        self._remember(self.c.path)
+        self._rebuild_view_menu()  # also fixes the View menu being empty until the first reload
         self._load_audio()
         self.refresh()
         root.after(POLL_MS, self._poll_file)
@@ -48,6 +55,8 @@ class PreviewApp:
         file_menu = tk.Menu(menu, tearoff=False)
         file_menu.add_command(label="Open…", accelerator="Ctrl+O", command=self.open_dialog)
         file_menu.add_command(label="Reload", accelerator="F5", command=self.reload)
+        self.recent_menu = tk.Menu(file_menu, tearoff=False)
+        file_menu.add_cascade(label="Recent", menu=self.recent_menu)
         file_menu.add_separator()
         file_menu.add_command(label="Export MP4…", command=self.export_video)
         file_menu.add_command(label="Export PNG frames…", command=self.export_frames)
@@ -102,9 +111,40 @@ class PreviewApp:
         r.bind("<F5>", lambda _e: self.reload())
         r.bind("<Control-o>", lambda _e: self.open_dialog())
         r.bind("m", lambda _e: self.toggle_mute())
+        r.bind("g", lambda _e: (self.show_guides.set(not self.show_guides.get()), self.refresh()))
+
+    def _remember(self, path) -> None:
+        if path:
+            self.recent = update_recent(self.recent, path)
+            save_recent(self.recent)
+        self._rebuild_recent_menu()
+
+    def _rebuild_recent_menu(self) -> None:
+        self.recent_menu.delete(0, "end")
+        if not self.recent:
+            self.recent_menu.add_command(label="(empty)", state="disabled")
+        for p in self.recent:
+            self.recent_menu.add_command(label=p, command=lambda p=p: self._open_path(p))
+
+    def _open_path(self, path: str) -> None:
+        if not Path(path).exists():
+            self.recent = prune_missing(self.recent)
+            save_recent(self.recent)
+            self._rebuild_recent_menu()
+            self.status.configure(text=f"Not found: {path}", foreground="#b00020")
+            return
+        error = self.c.load(path)
+        if not error:
+            self._remember(path)
+        self._after_load(error)
 
     def _rebuild_view_menu(self) -> None:
         self.view_menu.delete(0, "end")
+        self.view_menu.add_checkbutton(label="Chord colours", variable=self.chord_colors,
+                                       command=self._toggle_chord_colors)
+        self.view_menu.add_checkbutton(label="Guidelines", accelerator="G", variable=self.show_guides,
+                                       command=self.refresh)
+        self.view_menu.add_separator()
         self._set_var = tk.StringVar(value=self.c.subtitle_set or "")
         for name in self.c.subtitle_sets:
             self.view_menu.add_radiobutton(label=f"Subtitle: {name}", value=name, variable=self._set_var,
@@ -127,6 +167,10 @@ class PreviewApp:
         error = self.audio.load(project.audio_path, project.audio_start, project.fps)
         self._note = error or self.audio.message or ""
 
+    def _toggle_chord_colors(self) -> None:
+        self.c.chord_colors = self.chord_colors.get()
+        self.refresh()
+
     def toggle_mute(self) -> None:
         self.audio.muted = not self.audio.muted
         self._note = "muted" if self.audio.muted else (self.audio.message or "")
@@ -148,7 +192,7 @@ class PreviewApp:
     def open_dialog(self) -> None:
         path = filedialog.askopenfilename(filetypes=[("MViser project", "*.yaml *.yml"), ("All", "*.*")])
         if path:
-            self._after_load(self.c.load(path))
+            self._open_path(path)
 
     def open_settings(self, layer: str) -> None:
         from .settings_window import SettingsWindow
@@ -243,6 +287,15 @@ class PreviewApp:
         if image is not None:
             self._photo = ImageTk.PhotoImage(image)
             self.canvas.create_image(w // 2, h // 2, image=self._photo)
+            if self.show_guides.get():
+                iw, ih = image.size
+                shapes = guide_shapes(iw, ih, (w - iw) / 2, (h - ih) / 2)
+                for line in shapes["centre"]:
+                    self.canvas.create_line(*line, fill="#00e5ff", dash=(4, 3))
+                for line in shapes["thirds"]:
+                    self.canvas.create_line(*line, fill="#ffd54f", dash=(2, 4))
+                for rect in shapes["safe"]:
+                    self.canvas.create_rectangle(*rect, outline="#ff5252", dash=(6, 3))
         else:
             self.canvas.create_text(w // 2, h // 2, text="File → Open… (.mvproj.yaml)", fill="#aaaaaa")
         self._draw_timeline()

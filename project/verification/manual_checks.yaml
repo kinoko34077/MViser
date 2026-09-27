@@ -66,6 +66,15 @@ checks:
     expected: "Lyric '焦がれ' repeats faintly down both margins and scrolls smoothly; it fades in with the lyric and stops at the next lyric"
     status: pending
     result: ""
+  - id: gui-conveniences
+    area: gui
+    from: "#20"
+    steps:
+      - "Open two different projects via File → Open…, restart the GUI, check File → Recent"
+      - "View → Chord colours off/on; press G for guidelines; export a frame afterwards"
+    expected: "Recent lists both (newest first); colours toggle only in the preview; guides visible in preview but not in exported frames"
+    status: pending
+    result: ""
   - id: midi-fl
     area: input
     from: "#2 (MVP-1)"

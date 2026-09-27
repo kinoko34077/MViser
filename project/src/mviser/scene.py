@@ -53,6 +53,8 @@ def chord_background(project: CompiledProject, payload: dict) -> str:
     for key in keys:
         if key in colors:
             return colors[key]
+    if "background_color" in payload.get("rule_style", {}):
+        return payload["rule_style"]["background_color"]
     if style.get("auto_chord_colors", True):
         return auto_chord_color(spec)
     return style["background_color"]
@@ -76,12 +78,16 @@ def resolve_scene_state(project: CompiledProject, frame: int) -> SceneState:
     if chord_event:
         payload = chord_event.payload
         local = tempo.frame_to_seconds(chord_event.local_frame(frame))
+        rule = payload.get("rule_style", {})
+        preset = payload.get("motion", rule.get("motion", motion["enter"]))
+        amount = payload.get("pulse", rule.get("pulse", motion["pulse"]))
         state.update(
             background_color=chord_background(project, payload),
+            text_color=rule.get("text_color", style["text_color"]),
             chord_label=payload.get("label", payload["display"]),
             chord_progress=chord_event.progress(frame),
-            chord_motion=enter(payload.get("motion", motion["enter"]), local, float(motion["enter_duration"])),
-            chord_scale=pulse(phase, float(motion["pulse"])),
+            chord_motion=enter(preset, local, float(motion["enter_duration"])),
+            chord_scale=pulse(phase, float(amount)),
         )
 
     lyric_event = project.tracks["lyric"].active(frame)

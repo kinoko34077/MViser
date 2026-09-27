@@ -14,6 +14,7 @@ from .harmony import ChordSpec, HarmonyContext, MappingError, default_registry
 from .harmony.sources import IMPORTERS, SourceError
 from .motion import PRESETS
 from .ruby import strip_ruby
+from .styling import StyleRuleError, match_rules, validate_rules
 from .timeline import BEATS_PER_MEASURE, Tempo, TimelineError, Track, build_track
 
 SCHEMA_VERSION = 1
@@ -38,6 +39,7 @@ DEFAULTS: dict[str, Any] = {
         "font_path": None,
         "chord_colors": {},
         "auto_chord_colors": True,
+        "rules": [],
     },
     "motion": {"enter": "fade", "enter_duration": 0.2, "pulse": 0.04},
     "harmony": {
@@ -105,6 +107,10 @@ def normalize(raw: dict[str, Any], base_dir: Path | str = ".") -> dict[str, Any]
     for name, color in style["chord_colors"].items():
         style["chord_colors"][name] = _check_color(color, f"style.chord_colors.{name}")
 
+    try:
+        style["rules"] = validate_rules(style.get("rules"), _check_color)
+    except StyleRuleError as exc:
+        raise ProjectError(str(exc)) from exc
     if doc["harmony"]["display"] not in DISPLAY_MODES:
         raise ProjectError(f"harmony.display must be one of {DISPLAY_MODES}")
     motion = doc["motion"]
@@ -145,6 +151,9 @@ def normalize(raw: dict[str, Any], base_dir: Path | str = ".") -> dict[str, Any]
             raise ProjectError(f"events[{i}]: lyric value must be text")
         if "motion" in event and event["motion"] not in PRESETS:
             raise ProjectError(f"events[{i}]: motion must be one of {PRESETS}")
+        if "pulse" in event and (isinstance(event["pulse"], bool) or not isinstance(event["pulse"], (int, float))
+                                 or event["pulse"] < 0):
+            raise ProjectError(f"events[{i}]: pulse must be a non-negative number")
     doc["events"] = events
     return doc
 
@@ -213,7 +222,7 @@ def compile_project(doc: dict[str, Any], base_dir: Path | str = ".") -> Compiled
             raise ProjectError(f"events[{i}].at: {exc}") from exc
         last_start = max(last_start, seconds)
         payload: dict[str, Any] = {"value": event["value"], "seconds": seconds}
-        for key in ("label", "color", "motion"):
+        for key in ("label", "color", "motion", "pulse"):
             if key in event:
                 payload[key] = event[key]
         if "duration" in event:
@@ -225,6 +234,7 @@ def compile_project(doc: dict[str, Any], base_dir: Path | str = ".") -> Compiled
             except MappingError as exc:
                 raise ProjectError(f"events[{i}]: {exc}") from exc
             payload["chord"] = spec
+            payload["rule_style"] = match_rules(spec, doc["style"]["rules"])
             payload["display"] = chord_display(spec, event["value"], harmony["display"])
         else:
             payload["text"] = strip_ruby(str(event["value"]))

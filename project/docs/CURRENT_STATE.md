@@ -1,6 +1,6 @@
 # Current State
 
-Last verified: 2026-09-27 — MVP-0 (MViser#2) implemented on branch `claude/mviser-issue-1-2-7mxifc`; `knt doctor` / `knt verify` green locally (Linux, pwsh 7.4)
+Last verified: 2026-09-27 — PR #3 merged to main (0aa9778, CI green Ubuntu/Windows); analysis-driven styling (MViser#4) in progress
 
 ## Implemented
 
@@ -10,16 +10,17 @@ Last verified: 2026-09-27 — MVP-0 (MViser#2) implemented on branch `claude/mvi
 - Harmony layer (ADR 0002): `ChordSpec` in cents; mappers `symbol` / `degree` / `tones` (microtonal, JI, EDO) /
   `pitch_set`; analyzers `pitch_classes` / `identify` (fail-open UNKNOWN) / `function` (roman, diatonic, function);
   `project.key`, `harmony.display` (symbol / source / roman); μChordbot `.mcb` import.
+- Analysis-driven styling `style.rules` (MViser#4): colour / text colour / motion / pulse by quality, function, roman, diatonic, microtonal, notation, root.
 - MVP-1 MIDI import (`mido`): chord segmentation (strum window, silence gaps) and single-note mode (ADR 0003).
 - Motion presets `cut` / `fade` / `slide`, beat-phase `pulse`, per-event override.
 - Automatic per-root chord colours with explicit overrides.
 - Lyric track (ruby parsed; base text only rendered).
 - CLI: `inspect`, `frame`, `render` (range `--start/--end`, `--frames`, `--no-audio`).
-- 52 unit / E2E tests covering all eight MViser#2 verification units, the harmony layer and MIDI import.
+- 59 unit / E2E tests covering all eight MViser#2 verification units, the harmony layer, MIDI import and style rules.
 
-## MViser#2 MVP-0 acceptance
+## MViser#2 MVP-0 / MVP-1 acceptance
 
-All nine checkboxes are satisfied by `project/tests/` (YAML load, measure/beat→frame, active chord, local progress,
+MVP-0 and MVP-1 are satisfied (recorded on MViser#2). MVP-0's nine checkboxes are covered by `project/tests/` (YAML load, measure/beat→frame, active chord, local progress,
 SceneState-based background+label, enter animation, frame sequence, audio MP4, boundary tests).
 
 ## Known issues / constraints
@@ -35,8 +36,7 @@ SceneState-based background+label, enter animation, frame sequence, audio MP4, b
 
 1. KiNoTch. review of the rendered sample look (colours, font sizes, motion feel).
 2. Try MIDI import with real FL Studio exports; tune `window` / `min_duration` defaults.
-3. Analysis-driven styling (e.g. colour or motion by `function`).
-4. Then #1 Priority A/B items (ruby rendering, subtitle sets, GUI preview).
+3. Then #1 Priority A/B items (ruby rendering, subtitle sets, GUI preview).
 
 ## Verification
 

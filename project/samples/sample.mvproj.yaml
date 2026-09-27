@@ -22,6 +22,11 @@ style:
   lyric_font_size: 56
   chord_colors:
     Em: "#1F3A5F"
+  rules:                   # first match wins; below event color / chord_colors, above auto colour
+    - when: {function: dominant}
+      set: {background_color: "#6A1B1B", pulse: 0.08}
+    - when: {function: subdominant}
+      set: {background_color: "#1B4D3E"}
 
 harmony:
   notation: auto           # symbol | degree | tones | pitch_set | auto

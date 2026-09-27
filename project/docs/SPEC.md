@@ -26,6 +26,7 @@ Status: provisional (MViser#2 MVP-0). Long-term concept baseline: MViser#1.
 | `harmony/mappers.py` | notation → `ChordSpec`: `symbol`, `degree`, `tones`, `pitch_set` |
 | `harmony/analyzers.py` | `ChordSpec` → analysis: `pitch_classes`, `identify`, `function` |
 | `harmony/registry.py` | `HarmonyRegistry` (register / map / analyze / resolve), `HarmonyContext` (key) |
+| `styling.py` | `style.rules` validation and matching on ChordSpec facts |
 | `harmony/sources.py` | external progressions → events: `mcb` (μChordbot), `midi` |
 | `harmony/midi_source.py` | SMF via `mido`: notes (file tempo map) → pitch-set segments / single notes |
 | `timeline.py` | `Tempo` (fixed BPM, 4/4, FPS, offset), `Event{start_frame, end_frame, type, payload}`, `Track` active-event lookup, local progress, beat phase |
@@ -60,6 +61,9 @@ style:
   font_path: relative path | null   # CJK lyrics need a CJK-capable font
   chord_colors: {symbol|root|root+"m": "#RRGGBB"}
   auto_chord_colors: bool    # default true: hue by root, darker for minor qualities
+  rules:                     # analysis-driven styling (MViser#4), first match wins
+    - when: {quality|function|roman|diatonic|microtonal|notation|root: value | [values]}
+      set: {background_color, text_color, motion, pulse}
 harmony:
   notation: auto | symbol | degree | tones | pitch_set   # default auto (first mapper that accepts)
   analyzers: [pitch_classes, identify, function]        # order matters
@@ -81,6 +85,7 @@ events:                      # common time-range model
     color: "#RRGGBB"         # chord background override
     motion: cut|fade|slide   # per-event override
     duration: time           # optional early end
+    pulse: number            # chord only: overrides rule / motion.pulse
 chords: [{at, chord, ...}]   # shorthand → events(type: chord)
 lyrics: [{at, text, ...}]    # shorthand → events(type: lyric)
 ```
@@ -114,7 +119,8 @@ and fails open to `UNKNOWN` with the raw pitch set (`display: "?(C-C#-D)"`). `fu
 
 - `frame = round(seconds * fps)`; musical positions add `offset`, seconds do not.
 - Per type, an event lasts until the next event of the same type starts (half-open `[start, end)`); same-frame events: later declaration wins.
-- Colour priority: event `color` → `chord_colors[raw]` → `[display]` → `[roman]` → `[root(+m)]` → `[root]` → auto colour (hue = root cents / 1200) → `background_color`.
+- Colour priority: event `color` → `chord_colors[raw]` → `[display]` → `[roman]` → `[root(+m)]` → `[root]` → first matching `style.rules` → auto colour (hue = root cents / 1200) → `background_color`.
+- Motion / pulse priority: event value → matching rule → `motion.*`. Rule `text_color` applies to the chord label frame (lyrics too).
 - Animations use event-local time; `beat_phase = ((t - offset)/(60/bpm)) % 1`.
 - Range export (`--start/--end`) seeks audio by `audio.start + start`; PNG files are named by absolute frame number.
 

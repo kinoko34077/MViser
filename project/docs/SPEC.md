@@ -30,7 +30,8 @@ Status: provisional (MViser#2 MVP-0). Long-term concept baseline: MViser#1.
 | `harmony/sources.py` | external progressions → events: `mcb` (μChordbot), `midi` |
 | `harmony/midi_source.py` | SMF via `mido`: notes (file tempo map) → pitch-set segments / single notes |
 | `timeline.py` | `Tempo` (fixed BPM, 4/4, FPS, offset), `Event{start_frame, end_frame, type, payload}`, `Track` active-event lookup, local progress, beat phase |
-| `ruby.py` | なろう式ルビ parse; MVP-0 renders base text only |
+| `ruby.py` | なろう式ルビ parse (`|base《ruby》`, or trailing kanji run) |
+| `lyric_layout.py` | pure glyph layout for ruby / vertical lyrics (MViser#6) |
 | `motion.py` | `cut` / `fade` / `slide` enter presets and beat `pulse`, pure functions of local time |
 | `project_data.py` | YAML load/save, validation, defaults, compilation |
 | `scene.py` | `SceneState` resolution and chord background colour |
@@ -61,6 +62,10 @@ style:
   font_path: relative path | null   # CJK lyrics need a CJK-capable font
   chord_colors: {symbol|root|root+"m": "#RRGGBB"}
   auto_chord_colors: bool    # default true: hue by root, darker for minor qualities
+  ruby_scale: 0.5            # ruby size / lyric size (0, 1]
+  ruby_align: center | left | right   # left/right = top/bottom in vertical text
+  vertical: false            # vertical lyrics (stacked, ruby on the right)
+  lyric_position: [x, y] | null       # fractions; default [0.5, 0.82], vertical [0.88, 0.5]
   rules:                     # analysis-driven styling (MViser#4), first match wins
     - when: {quality|function|roman|diatonic|microtonal|notation|root: value | [values]}
       set: {background_color, text_color, motion, pulse}
@@ -86,6 +91,7 @@ events:                      # common time-range model
     motion: cut|fade|slide   # per-event override
     duration: time           # optional early end
     pulse: number            # chord only: overrides rule / motion.pulse
+    ruby_align / vertical / position   # lyric only: per-event overrides
 chords: [{at, chord, ...}]   # shorthand → events(type: chord)
 lyrics: [{at, text, ...}]    # shorthand → events(type: lyric)
 ```

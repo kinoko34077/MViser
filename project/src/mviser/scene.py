@@ -24,6 +24,10 @@ class SceneState:
     chord_scale: float = 1.0
     lyric: str | None = None
     lyric_motion: MotionState = MotionState()
+    lyric_segments: tuple = ()
+    lyric_align: str = "center"
+    lyric_vertical: bool = False
+    lyric_position: tuple[float, float] = (0.5, 0.82)
 
 
 def is_minor_like(spec: ChordSpec) -> bool:
@@ -94,8 +98,14 @@ def resolve_scene_state(project: CompiledProject, frame: int) -> SceneState:
     if lyric_event:
         payload = lyric_event.payload
         local = tempo.frame_to_seconds(lyric_event.local_frame(frame))
+        vertical = payload.get("vertical", style["vertical"])
+        position = payload.get("position") or style.get("lyric_position") or ((0.88, 0.5) if vertical else (0.5, 0.82))
         state.update(
             lyric=payload["text"],
+            lyric_segments=payload["segments"],
+            lyric_align=payload.get("ruby_align", style["ruby_align"]),
+            lyric_vertical=vertical,
+            lyric_position=tuple(position),
             lyric_motion=enter(payload.get("motion", motion["enter"]), local, float(motion["enter_duration"])),
         )
     return SceneState(**state)

@@ -7,6 +7,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
+from .lyric_layout import layout_lyric
 from .motion import MotionState
 from .scene import SceneState
 
@@ -60,12 +61,36 @@ class Renderer:
         draw.text((cx, cy), text, font=font, fill=_rgb(color) + (alpha,), anchor="mm")
         image.alpha_composite(layer)
 
+    def _measure(self, text: str, size: int) -> float:
+        return load_font(self.font_path, size).getlength(text)
+
+    def _lyric(self, image: Image.Image, state: SceneState) -> None:
+        motion = state.lyric_motion
+        if motion.opacity <= 0:
+            return
+        size = int(self.style["lyric_font_size"])
+        segments = state.lyric_segments or ((state.lyric, None),)
+        glyphs = layout_lyric(segments, size, float(self.style["ruby_scale"]), state.lyric_align,
+                              state.lyric_vertical, self._measure)
+        cx = state.lyric_position[0] * self.width + motion.offset_x * self.width
+        cy = state.lyric_position[1] * self.height + motion.offset_y * self.height
+        alpha = round(255 * min(max(motion.opacity, 0.0), 1.0))
+        fill = _rgb(state.text_color) + (alpha,)
+        layer = Image.new("RGBA", image.size, (0, 0, 0, 0))
+        draw = ImageDraw.Draw(layer)
+        for g in glyphs:
+            font = load_font(self.font_path, g.size)
+            # Baseline anchoring keeps separately drawn runs on one line regardless of their ink.
+            ascent = font.getmetrics()[0] if hasattr(font, "getmetrics") else g.size
+            anchor = "ls" if g.width else "ms"
+            draw.text((cx + g.x, cy + g.y + ascent), g.text, font=font, fill=fill, anchor=anchor)
+        image.alpha_composite(layer)
+
     def render(self, state: SceneState) -> Image.Image:
         image = Image.new("RGBA", (self.width, self.height), _rgb(state.background_color) + (255,))
         if state.chord_label:
             self._text(image, state.chord_label, (self.width / 2, self.height * 0.42),
                        int(self.style["chord_font_size"]), state.text_color, state.chord_motion, state.chord_scale)
         if state.lyric:
-            self._text(image, state.lyric, (self.width / 2, self.height * 0.82),
-                       int(self.style["lyric_font_size"]), state.text_color, state.lyric_motion)
+            self._lyric(image, state)
         return image.convert("RGB")

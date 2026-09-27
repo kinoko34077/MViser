@@ -1,6 +1,6 @@
 # Current State
 
-Last verified: 2026-09-27 — main c11a275 green; integrated panels (MViser#33) in PR
+Last verified: 2026-09-27 — main 388f57a green; subtitle undo/redo (MViser#35) in PR
 
 ## Implemented
 
@@ -17,6 +17,7 @@ Last verified: 2026-09-27 — main c11a275 green; integrated panels (MViser#33) 
 - Lyric track with ruby rendering (align center/left/right, scale) and vertical text; per-event position (MViser#6).
 - Multiple subtitle sets with per-set lyric style; `--subtitle-set`, `--all-subtitle-sets` (MViser#8).
 - Preview GUI (tkinter): seek, timeline, playback with synced audio (sounddevice, silent fallback, mute), auto-reload, export, subtitle set switch (MViser#10).
+- Subtitle editor undo / redo (MViser#35).
 - Integrated side panel (docked subtitle editor + chord list), toggle and width remembered (MViser#33).
 - Dark theme; GUI preferences (theme, time mode, guides, chord colours) remembered (MViser#31).
 - Editor handoff: split alpha layers + AviUtl .exo + AE .jsx from editable templates (MViser#29; exedit keys unverified).
@@ -30,7 +31,7 @@ Last verified: 2026-09-27 — main c11a275 green; integrated panels (MViser#33) 
 - Global / Project settings layers and settings window with override toggles (MViser#16).
 - CJK font discovery (Windows / macOS / Linux IPA, Noto, WenQuanYi, fontconfig).
 - CLI: `inspect`, `frame`, `render`, `gui` (range `--start/--end`, `--frames`, `--no-audio`, `--subtitle-set`, `--all-subtitle-sets`).
-- 143 unit / E2E tests covering all eight MViser#2 verification units, the harmony layer, MIDI import, style rules, lyric layout, subtitle sets, the preview controller and the audio player.
+- 145 unit / E2E tests covering all eight MViser#2 verification units, the harmony layer, MIDI import, style rules, lyric layout, subtitle sets, the preview controller and the audio player.
 
 ## MViser#2 MVP-0 / MVP-1 acceptance
 
@@ -56,7 +57,7 @@ Real-hardware checks are tracked in MViser#14; the canonical list is `project/ve
 
 1. KiNoTch. review of the rendered sample look (colours, font sizes, motion feel).
 2. Try MIDI import with real FL Studio exports; tune `window` / `min_duration` defaults.
-3. #1 baseline items are all implemented; tune everything from MViser#14 feedback, then consider undo/redo and chord editing in the GUI.
+3. #1 baseline items are all implemented; tune everything from MViser#14 feedback, then consider chord editing in the GUI and advanced animation.
 
 ## Verification
 

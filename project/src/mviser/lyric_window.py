@@ -45,7 +45,8 @@ class LyricPanel:
         bar = ttk.Frame(self.top, padding=6)
         bar.pack(fill="x")
         buttons = (("Add at playhead", self.add), ("Set time = playhead", self.retime),
-                   ("Update text", self.update), ("Delete", self.delete), ("Save", self.save))
+                   ("Update text", self.update), ("Delete", self.delete), ("Undo", self.undo), ("Redo", self.redo),
+                   ("Save", self.save))
         for i, (label, cmd) in enumerate(buttons):
             if compact:  # two columns so the docked panel stays narrow
                 ttk.Button(bar, text=label, command=cmd).grid(row=i // 2, column=i % 2, sticky="we", padx=2, pady=1)
@@ -53,6 +54,9 @@ class LyricPanel:
                 ttk.Button(bar, text=label, command=cmd).pack(side="right" if label == "Save" else "left", padx=2)
         if compact:
             bar.columnconfigure((0, 1), weight=1)
+        for seq, action in (("<Control-z>", self.undo), ("<Control-y>", self.redo), ("<Control-Z>", self.redo)):
+            for widget in (self.tree, entry):
+                widget.bind(seq, lambda _e, a=action: (a(), "break")[1])
         self.status = ttk.Label(self.top, padding=(6, 0, 6, 6), foreground=current_palette(parent)["error"],
                                 wraplength=260 if compact else 540)
         self.status.pack(fill="x")
@@ -61,6 +65,10 @@ class LyricPanel:
     def set_doc(self, doc: LyricDocument | None, message: str = "") -> None:
         """Swap the document after a project reload; keeps the selected index when it still exists."""
         keep = self._selected()
+        old = self.doc
+        if (old is not None and doc is not None and old.path == doc.path
+                and old.subtitle_set == doc.subtitle_set and old.dumps() == doc.dumps()):
+            doc._undo, doc._redo = old._undo, old._redo  # reload after our own save keeps history
         self.doc, self.dirty = doc, False
         self.status.configure(text=message)
         self.refresh(keep)
@@ -118,6 +126,16 @@ class LyricPanel:
         index = self._selected()
         if index is not None:
             self._run(lambda: self.doc.delete(index))
+
+    def undo(self) -> None:
+        if self.doc is not None and self.doc.undo():
+            self.dirty = True
+            self.refresh(self._selected())
+
+    def redo(self) -> None:
+        if self.doc is not None and self.doc.redo():
+            self.dirty = True
+            self.refresh(self._selected())
 
     def save(self) -> None:
         if self.doc is None:

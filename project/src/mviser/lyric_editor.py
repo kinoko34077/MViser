@@ -62,6 +62,8 @@ class LyricDocument:
                                                                              and not available):
             raise LyricEditError(f"unknown subtitle set {subtitle_set!r}; available: {available}")
         self.subtitle_set = subtitle_set or compiled.doc["active_subtitle_set"] or "default"
+        self._undo: list[str] = []
+        self._redo: list[str] = []
 
     # -- helpers --------------------------------------------------------------
     def _plain(self) -> dict:
@@ -109,10 +111,44 @@ class LyricDocument:
             out.append(LyricRow(i, item.get("at"), str(text), tempo.seconds_to_frame(tempo.to_seconds(item["at"]))))
         return out
 
+    # -- history (MViser#35) -------------------------------------------------------
+    HISTORY_LIMIT = 100
+
+    def _checkpoint(self) -> None:
+        self._undo.append(self.dumps())
+        del self._undo[:-self.HISTORY_LIMIT]
+        self._redo.clear()
+
+    def _restore(self, text: str) -> None:
+        self.data = self._yaml.load(text) or CommentedMap()
+
+    @property
+    def can_undo(self) -> bool:
+        return bool(self._undo)
+
+    @property
+    def can_redo(self) -> bool:
+        return bool(self._redo)
+
+    def undo(self) -> bool:
+        if not self._undo:
+            return False
+        self._redo.append(self.dumps())
+        self._restore(self._undo.pop())
+        return True
+
+    def redo(self) -> bool:
+        if not self._redo:
+            return False
+        self._undo.append(self.dumps())
+        self._restore(self._redo.pop())
+        return True
+
     # -- edits ----------------------------------------------------------------
     def add(self, frame: int, text: str, mode: str = "tempo") -> int:
         if not text.strip():
             raise LyricEditError("text must not be empty")
+        self._checkpoint()
         seq = self._list(create=True)
         entry = CommentedMap()
         entry["at"] = _yaml_at(frame_to_position(self.tempo, frame, mode))
@@ -124,6 +160,9 @@ class LyricDocument:
         seq = self._list(create=True)
         if not 0 <= index < len(seq):
             raise LyricEditError(f"no lyric at index {index}")
+        if text is not None and not text.strip():
+            raise LyricEditError("text must not be empty")
+        self._checkpoint()
         item = seq[index]
         if text is not None:
             if not text.strip():
@@ -137,6 +176,7 @@ class LyricDocument:
         seq = self._list(create=True)
         if not 0 <= index < len(seq):
             raise LyricEditError(f"no lyric at index {index}")
+        self._checkpoint()
         del seq[index]
 
     def sort(self, keep: int | None = None) -> int:

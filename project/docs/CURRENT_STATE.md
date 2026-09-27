@@ -1,6 +1,6 @@
 # Current State
 
-Last verified: 2026-09-27 — PR #3 merged to main (0aa9778, CI green Ubuntu/Windows); analysis-driven styling (MViser#4) in progress
+Last verified: 2026-09-27 — main 3685c24 green; ruby / vertical lyrics (MViser#6) in PR
 
 ## Implemented
 
@@ -14,9 +14,9 @@ Last verified: 2026-09-27 — PR #3 merged to main (0aa9778, CI green Ubuntu/Win
 - MVP-1 MIDI import (`mido`): chord segmentation (strum window, silence gaps) and single-note mode (ADR 0003).
 - Motion presets `cut` / `fade` / `slide`, beat-phase `pulse`, per-event override.
 - Automatic per-root chord colours with explicit overrides.
-- Lyric track (ruby parsed; base text only rendered).
+- Lyric track with ruby rendering (align center/left/right, scale) and vertical text; per-event position (MViser#6).
 - CLI: `inspect`, `frame`, `render` (range `--start/--end`, `--frames`, `--no-audio`).
-- 59 unit / E2E tests covering all eight MViser#2 verification units, the harmony layer, MIDI import and style rules.
+- 67 unit / E2E tests covering all eight MViser#2 verification units, the harmony layer, MIDI import, style rules and lyric layout.
 
 ## MViser#2 MVP-0 / MVP-1 acceptance
 
@@ -27,7 +27,7 @@ SceneState-based background+label, enter animation, frame sequence, audio MP4, b
 
 - Lyrics require a CJK font; on systems without Noto CJK / Yu Gothic / Meiryo set `style.font_path`.
 - Fixed BPM, 4/4, single audio file; WAV duration auto-detected, other formats need `project.duration`.
-- Ruby / vertical text are not rendered yet.
+- Vertical text: no rotation of long-vowel marks / punctuation, no tate-chu-yoko.
 - KiNoTch. Runtime not integrated (see ADR 0001).
 - Function analysis is a first cut (no key detection, secondary dominants reported as chromatic).
 - "Music-dsl" repository not found; μChordbot DSL spec used as reference.
@@ -36,7 +36,7 @@ SceneState-based background+label, enter animation, frame sequence, audio MP4, b
 
 1. KiNoTch. review of the rendered sample look (colours, font sizes, motion feel).
 2. Try MIDI import with real FL Studio exports; tune `window` / `min_duration` defaults.
-3. Then #1 Priority A/B items (ruby rendering, subtitle sets, GUI preview).
+3. Then #1 Priority A/B items (multiple subtitle sets, GUI preview).
 
 ## Verification
 

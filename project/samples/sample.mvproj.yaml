@@ -54,4 +54,5 @@ lyrics:
   - at: "2:1"
     text: "焦《こ》がれ"
   - at: "5:1"
-    text: "夢《ゆめ》の中"
+    text: "夢《ゆめ》の中《なか》"
+    vertical: true

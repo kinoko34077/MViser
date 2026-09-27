@@ -13,7 +13,8 @@ import yaml
 from .harmony import ChordSpec, HarmonyContext, MappingError, default_registry
 from .harmony.sources import IMPORTERS, SourceError
 from .motion import PRESETS
-from .ruby import strip_ruby
+from .lyric_layout import ALIGNS
+from .ruby import parse_ruby, strip_ruby
 from .styling import StyleRuleError, match_rules, validate_rules
 from .timeline import BEATS_PER_MEASURE, Tempo, TimelineError, Track, build_track
 
@@ -40,6 +41,10 @@ DEFAULTS: dict[str, Any] = {
         "chord_colors": {},
         "auto_chord_colors": True,
         "rules": [],
+        "ruby_scale": 0.5,
+        "ruby_align": "center",
+        "vertical": False,
+        "lyric_position": None,      # [x, y] fractions; default [0.5, 0.82] / vertical [0.88, 0.5]
     },
     "motion": {"enter": "fade", "enter_duration": 0.2, "pulse": 0.04},
     "harmony": {
@@ -76,6 +81,20 @@ def _check_color(value: Any, where: str) -> str:
     return text
 
 
+def _check_lyric_options(obj: dict[str, Any], where: str) -> None:
+    if obj.get("ruby_align") is not None and obj["ruby_align"] not in ALIGNS:
+        raise ProjectError(f"{where}.ruby_align must be one of {ALIGNS}")
+    if "vertical" in obj and not isinstance(obj["vertical"], bool):
+        raise ProjectError(f"{where}.vertical must be true or false")
+    for key in ("lyric_position", "position"):
+        pos = obj.get(key)
+        if pos is None:
+            continue
+        if (not isinstance(pos, (list, tuple)) or len(pos) != 2
+                or not all(isinstance(v, (int, float)) and not isinstance(v, bool) and 0 <= v <= 1 for v in pos)):
+            raise ProjectError(f"{where}.{key} must be [x, y] fractions in 0..1")
+
+
 def normalize(raw: dict[str, Any], base_dir: Path | str = ".") -> dict[str, Any]:
     """Validate a raw document and fill defaults. Returns a new dict."""
     if not isinstance(raw, dict):
@@ -107,6 +126,10 @@ def normalize(raw: dict[str, Any], base_dir: Path | str = ".") -> dict[str, Any]
     for name, color in style["chord_colors"].items():
         style["chord_colors"][name] = _check_color(color, f"style.chord_colors.{name}")
 
+    _check_lyric_options(style, "style")
+    if not isinstance(style["ruby_scale"], (int, float)) or isinstance(style["ruby_scale"], bool) \
+            or not 0 < style["ruby_scale"] <= 1:
+        raise ProjectError("style.ruby_scale must be in (0, 1]")
     try:
         style["rules"] = validate_rules(style.get("rules"), _check_color)
     except StyleRuleError as exc:
@@ -149,6 +172,8 @@ def normalize(raw: dict[str, Any], base_dir: Path | str = ".") -> dict[str, Any]
             raise ProjectError(f"events[{i}]: notation applies to chord events only")
         if event["type"] == "lyric" and not isinstance(event["value"], str):
             raise ProjectError(f"events[{i}]: lyric value must be text")
+        if event["type"] == "lyric":
+            _check_lyric_options(event, f"events[{i}]")
         if "motion" in event and event["motion"] not in PRESETS:
             raise ProjectError(f"events[{i}]: motion must be one of {PRESETS}")
         if "pulse" in event and (isinstance(event["pulse"], bool) or not isinstance(event["pulse"], (int, float))
@@ -238,6 +263,10 @@ def compile_project(doc: dict[str, Any], base_dir: Path | str = ".") -> Compiled
             payload["display"] = chord_display(spec, event["value"], harmony["display"])
         else:
             payload["text"] = strip_ruby(str(event["value"]))
+            payload["segments"] = tuple(parse_ruby(str(event["value"])))
+            for key in ("ruby_align", "vertical", "position"):
+                if key in event:
+                    payload[key] = event[key]
         starts[event["type"]].append((tempo.seconds_to_frame(seconds), payload))
 
     duration = project.get("duration")

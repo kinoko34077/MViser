@@ -69,8 +69,9 @@
   },
   "notes": [
     "Only README.md and project/** are normally edited in an individual repository.",
-    "Python 3.10+; Pillow/PyYAML/imageio-ffmpeg via project/requirements.txt.",
-    "KiNoTch. Runtime is not used in MVP-0 (runtime.modules empty); see project/docs/adr/0001-mvp0-architecture.md."
+    "Python 3.10+; dependencies in project/requirements.txt (Pillow, PyYAML, imageio-ffmpeg, mido, numpy, sounddevice, ruamel.yaml); GUI needs a Python with tkinter.",
+    "KiNoTch. Runtime is not used (runtime.modules empty); see project/docs/adr/0001-mvp0-architecture.md.",
+    "Real-hardware checks: project/verification/manual_checks.yaml -> MViser#14."
   ],
   "profiles": [
     "cli"

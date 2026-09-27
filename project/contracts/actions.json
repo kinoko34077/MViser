@@ -3,7 +3,7 @@
   "actions": [
     {
       "id": "project.inspect",
-      "summary": "Load a .mvproj.yaml and return compiled frame-based events.",
+      "summary": "Load a .mvproj.yaml (incl. MIDI / .mcb imports) and return compiled frame-based events with harmony analysis.",
       "behavior": {
         "side_effect": "read",
         "cancellable": false
@@ -11,7 +11,7 @@
     },
     {
       "id": "render.frame",
-      "summary": "Render the SceneState at one time/frame to a PNG.",
+      "summary": "Render the SceneState at one time / frame to a PNG.",
       "behavior": {
         "side_effect": "write",
         "cancellable": false
@@ -19,10 +19,26 @@
     },
     {
       "id": "render.video",
-      "summary": "Render a frame range to MP4 (with trimmed audio) and/or a PNG sequence.",
+      "summary": "Render a frame range to MP4 / ProRes 4444 / WebM and/or a PNG sequence, with layer selection, split layers and subtitle sets.",
       "behavior": {
         "side_effect": "write",
         "cancellable": false
+      }
+    },
+    {
+      "id": "render.handoff",
+      "summary": "Render split alpha layers and write AviUtl .exo / After Effects .jsx from editable templates.",
+      "behavior": {
+        "side_effect": "write",
+        "cancellable": false
+      }
+    },
+    {
+      "id": "gui.preview",
+      "summary": "Open the preview GUI (timeline, audio playback, subtitle editor, settings); edits write the project / global YAML.",
+      "behavior": {
+        "side_effect": "write",
+        "cancellable": true
       }
     }
   ]

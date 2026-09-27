@@ -1,6 +1,7 @@
-# MViser Specification — MVP-0
+# MViser Specification
 
-Status: provisional (MViser#2 MVP-0). Long-term concept baseline: MViser#1.
+Status: current for `main` (v0.2.0). Origin: MViser#2 (MVP-0/1); concept baseline MViser#1 — all its items are
+implemented (status table on MViser#1). Feature sections name the issue that introduced them.
 
 ## Purpose
 
@@ -23,6 +24,7 @@ Status: provisional (MViser#2 MVP-0). Long-term concept baseline: MViser#1.
 | --- | --- |
 | `chord_engine.py` | low-level chord symbol parser used by the `symbol` mapper |
 | `harmony/model.py` | `ChordSpec` / `Tone` (cents-based, microtonal-capable), pitch & interval parsing |
+| `harmony/qualities.py` | 12-TET quality templates / suffixes shared by mapper and identify |
 | `harmony/mappers.py` | notation → `ChordSpec`: `symbol`, `degree`, `tones`, `pitch_set` |
 | `harmony/analyzers.py` | `ChordSpec` → analysis: `pitch_classes`, `identify`, `function` |
 | `harmony/registry.py` | `HarmonyRegistry` (register / map / analyze / resolve), `HarmonyContext` (key) |
@@ -226,6 +228,6 @@ Global may hold `style`, `motion`, `harmony` and `project.fps` / `project.resolu
 GUI Settings → Project… / Global… edits one layer; each field shows where its value comes from, an "override"
 toggle, and Save writes only overridden keys (comments preserved via `ruamel.yaml`) after full validation.
 
-## Non-goals (MVP-0)
+## Non-goals (current)
 
 MViser#2 "Explicit MVP non-goals" に従う（音声からの採譜、機能和声、可変テンポ、GUI、ルビ描画・縦書き等）。

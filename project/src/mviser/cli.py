@@ -135,7 +135,7 @@ def cmd_handoff(args) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="mviser", description="MViser MVP-0 renderer")
+    parser = argparse.ArgumentParser(prog="mviser", description="MViser — music-synchronised MV material generator")
     parser.add_argument("--version", action="version", version=f"mviser {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
 

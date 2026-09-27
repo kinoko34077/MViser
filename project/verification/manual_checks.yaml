@@ -6,6 +6,7 @@ tracking_issue: 14
 environment_hint: "Windows 10/11, Python 3.10+ (python.org build with tkinter), after `knt.cmd setup`"
 checks:
   - id: jp-font
+    priority: high
     area: rendering
     from: "#6, #10"
     steps:
@@ -26,6 +27,7 @@ checks:
     status: pending
     result: ""
   - id: gui-audio
+    priority: high
     area: audio
     from: "#12"
     steps:
@@ -104,6 +106,7 @@ checks:
     status: pending
     result: ""
   - id: handoff
+    priority: high
     area: output
     from: "#29"
     steps:
@@ -131,6 +134,7 @@ checks:
     status: pending
     result: ""
   - id: midi-fl
+    priority: high
     area: input
     from: "#2 (MVP-1)"
     steps:

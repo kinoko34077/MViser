@@ -106,14 +106,18 @@ def _check_color(value: Any, where: str) -> str:
     return text
 
 
+FOLLOW = "follow"  # MViser#27: take the previous lyric event's value
+FOLLOW_KEYS = {"ruby_align": "ruby_align", "vertical": "vertical", "position": "lyric_position"}  # event -> style
+
+
 def _check_lyric_options(obj: dict[str, Any], where: str) -> None:
-    if obj.get("ruby_align") is not None and obj["ruby_align"] not in ALIGNS:
-        raise ProjectError(f"{where}.ruby_align must be one of {ALIGNS}")
-    if "vertical" in obj and not isinstance(obj["vertical"], bool):
-        raise ProjectError(f"{where}.vertical must be true or false")
+    if obj.get("ruby_align") is not None and obj["ruby_align"] not in ALIGNS + (FOLLOW,):
+        raise ProjectError(f"{where}.ruby_align must be one of {ALIGNS + (FOLLOW,)}")
+    if "vertical" in obj and not isinstance(obj["vertical"], bool) and obj["vertical"] != FOLLOW:
+        raise ProjectError(f"{where}.vertical must be true, false or follow")
     for key in ("lyric_position", "position"):
         pos = obj.get(key)
-        if pos is None:
+        if pos is None or pos == FOLLOW:
             continue
         if (not isinstance(pos, (list, tuple)) or len(pos) != 2
                 or not all(isinstance(v, (int, float)) and not isinstance(v, bool) and 0 <= v <= 1 for v in pos)):
@@ -353,8 +357,25 @@ def compile_project(doc: dict[str, Any], base_dir: Path | str = ".") -> Compiled
         else:
             seconds_total = last_start + BEATS_PER_MEASURE * tempo.beat_sec
     total_frames = max(tempo.seconds_to_frame(seconds_total), 1)
+    _resolve_follow(starts["lyric"], doc["style"])
     tracks = {t: build_track(t, s, total_frames) for t, s in starts.items()}
     return CompiledProject(doc, base_dir, tempo, total_frames, tracks, context)
+
+
+def _resolve_follow(lyric_starts: list[tuple[int, dict[str, Any]]], style: dict[str, Any]) -> None:
+    """Replace `follow` (explicit or via a style default) with the previous lyric's resolved value.
+    The first lyric falls back to the built-in default."""
+    previous: dict[str, Any] = {}
+    for _frame, payload in sorted(lyric_starts, key=lambda item: item[0]):
+        for key, style_key in FOLLOW_KEYS.items():
+            value = payload.get(key, style.get(style_key))
+            if value == FOLLOW:
+                value = previous.get(key, DEFAULTS["style"][style_key])
+            previous[key] = value
+            if value is None:
+                payload.pop(key, None)
+            else:
+                payload[key] = value
 
 
 def load_project(path: Path | str, subtitle_set: str | None = None,

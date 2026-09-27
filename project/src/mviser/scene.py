@@ -102,7 +102,10 @@ def resolve_scene_state(project: CompiledProject, frame: int) -> SceneState:
         payload = lyric_event.payload
         local = tempo.frame_to_seconds(lyric_event.local_frame(frame))
         vertical = payload.get("vertical", style["vertical"])
-        position = payload.get("position") or style.get("lyric_position") or ((0.88, 0.5) if vertical else (0.5, 0.82))
+        style_position = style.get("lyric_position")
+        if style_position == "follow":  # resolved per event at compile time; nothing left to follow here
+            style_position = None
+        position = payload.get("position") or style_position or ((0.88, 0.5) if vertical else (0.5, 0.82))
         state.update(
             lyric=payload["text"],
             lyric_segments=payload["segments"],

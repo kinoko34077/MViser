@@ -94,6 +94,15 @@ checks:
     expected: "Preview and timeline update after Save; YAML keeps comments, new times are quoted \"M:B.bb\" and land on the same frame"
     status: pending
     result: ""
+  - id: follow-timeinfo
+    area: gui
+    from: "#27"
+    steps:
+      - "Set `vertical: true` on one lyric and `vertical: follow` on the next; preview both"
+      - "GUI: View → Time: tempo / frames; Help → Project info"
+    expected: "Second lyric is vertical too; readout switches format; project info lists title, bpm/key, fps/resolution, duration, counts, sets, audio"
+    status: pending
+    result: ""
   - id: midi-fl
     area: input
     from: "#2 (MVP-1)"

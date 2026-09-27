@@ -50,6 +50,7 @@ Status: provisional (MViser#2 MVP-0). Long-term concept baseline: MViser#1.
 | `lyric_editor.py` / `lyric_window.py` | lyric CRUD over the project YAML / Tk view (MViser#25) |
 | `time_format.py` / `project_info.py` | time display modes / project info rows (MViser#27) |
 | `handoff.py` + `templates/` | AviUtl .exo / AE .jsx generation from split layers (MViser#29) |
+| `theme.py` | light / dark palettes (WCAG ≥ 4.5:1 status colours), ttk styling (MViser#31) |
 | `audio_player.py` | FFmpeg PCM decode, `sounddevice` output, audio-master clock, silent fallback (MViser#12) |
 
 ## Project schema (`schema_version: 1`)
@@ -197,6 +198,8 @@ YAML note: the loader disables YAML 1.1 base-60 numbers, so unquoted `at: 3:1` i
 would otherwise read 181). Quoting is still recommended for other YAML tools.
 
 GUI View → Time: absolute (mm:ss.ff) / tempo (M:B.bb) / frames for the readout; Help → Project info (MViser#27).
+View → Theme: light / dark (MViser#31). Theme, time mode, guides and chord-colour toggle persist in `gui_prefs.json`
+next to the Global settings file; invalid values fall back to defaults. Menus pick up a theme change on restart.
 
 ## Editor handoff (MViser#29)
 

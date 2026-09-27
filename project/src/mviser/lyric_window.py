@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import tkinter as tk
 from tkinter import ttk
+
+from .theme import current_palette
 from typing import Callable
 
 from .lyric_editor import LyricDocument, LyricEditError
@@ -42,7 +44,7 @@ class LyricWindow:
                            ("Update text", self.update), ("Delete", self.delete)):
             ttk.Button(bar, text=label, command=cmd).pack(side="left", padx=2)
         ttk.Button(bar, text="Save", command=self.save).pack(side="right")
-        self.status = ttk.Label(self.top, padding=(6, 0, 6, 6), foreground="#b00020")
+        self.status = ttk.Label(self.top, padding=(6, 0, 6, 6), foreground=current_palette(master)["error"])
         self.status.pack(fill="x")
         self.refresh()
 

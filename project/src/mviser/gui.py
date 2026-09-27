@@ -14,7 +14,8 @@ from PIL import ImageTk
 from . import __version__
 from .audio_player import AudioPlayer
 from .global_settings import global_path, load_global
-from .gui_state import load_recent, prune_missing, save_recent, update_recent
+from .gui_state import load_prefs, load_recent, prune_missing, save_prefs, save_recent, update_recent
+from .theme import THEMES, apply_theme, palette
 from .guides import guide_shapes
 from .time_format import TIME_MODES, format_time
 from .preview_controller import PreviewController
@@ -36,9 +37,13 @@ class PreviewApp:
         self._audio_clock = False
         self._note = ""
         self.recent = prune_missing(load_recent())
-        self.show_guides = tk.BooleanVar(value=False)
-        self.chord_colors = tk.BooleanVar(value=True)
-        self.time_mode = tk.StringVar(value="absolute")
+        prefs = load_prefs()
+        self.show_guides = tk.BooleanVar(value=prefs["guides"])
+        self.chord_colors = tk.BooleanVar(value=prefs["chord_colors"])
+        self.c.chord_colors = prefs["chord_colors"]
+        self.time_mode = tk.StringVar(value=prefs["time_mode"])
+        self.theme = tk.StringVar(value=prefs["theme"])
+        self.colors = apply_theme(root, prefs["theme"])
         root.title("MViser")
         root.geometry("1100x760")
         root.minsize(640, 480)
@@ -81,7 +86,7 @@ class PreviewApp:
         self.root.config(menu=menu)
 
     def _build_body(self) -> None:
-        self.canvas = tk.Canvas(self.root, background="#202020", highlightthickness=0)
+        self.canvas = tk.Canvas(self.root, background=palette("dark")["canvas"], highlightthickness=0)
         self.canvas.pack(fill="both", expand=True)
         self.canvas.bind("<Configure>", lambda _e: self.refresh())
 
@@ -101,7 +106,7 @@ class PreviewApp:
         self.slider.pack(side="left", fill="x", expand=True, padx=8)
         self.info = ttk.Label(bar, width=60, anchor="w")
         self.info.pack(side="left")
-        self.status = ttk.Label(self.root, padding=(6, 2), anchor="w", foreground="#b00020")
+        self.status = ttk.Label(self.root, padding=(6, 2), anchor="w", foreground=self.colors["error"])
         self.status.pack(fill="x")
 
     def _bind_keys(self) -> None:
@@ -118,7 +123,7 @@ class PreviewApp:
         r.bind("<Control-o>", lambda _e: self.open_dialog())
         r.bind("<Control-l>", lambda _e: self.open_lyric_editor())
         r.bind("m", lambda _e: self.toggle_mute())
-        r.bind("g", lambda _e: (self.show_guides.set(not self.show_guides.get()), self.refresh()))
+        r.bind("g", lambda _e: (self.show_guides.set(not self.show_guides.get()), self._prefs_changed()))
 
     def _remember(self, path) -> None:
         if path:
@@ -138,7 +143,7 @@ class PreviewApp:
             self.recent = prune_missing(self.recent)
             save_recent(self.recent)
             self._rebuild_recent_menu()
-            self.status.configure(text=f"Not found: {path}", foreground="#b00020")
+            self.status.configure(text=f"Not found: {path}", foreground=self.colors["error"])
             return
         error = self.c.load(path)
         if not error:
@@ -153,7 +158,10 @@ class PreviewApp:
                                        command=self.refresh)
         for mode in TIME_MODES:
             self.view_menu.add_radiobutton(label=f"Time: {mode}", value=mode, variable=self.time_mode,
-                                           command=self.refresh)
+                                           command=self._prefs_changed)
+        for name in THEMES:
+            self.view_menu.add_radiobutton(label=f"Theme: {name}", value=name, variable=self.theme,
+                                           command=self._set_theme)
         self.view_menu.add_separator()
         self._set_var = tk.StringVar(value=self.c.subtitle_set or "")
         for name in self.c.subtitle_sets:
@@ -177,6 +185,15 @@ class PreviewApp:
         error = self.audio.load(project.audio_path, project.audio_start, project.fps)
         self._note = error or self.audio.message or ""
 
+    def _prefs_changed(self) -> None:
+        save_prefs({"theme": self.theme.get(), "time_mode": self.time_mode.get(),
+                    "guides": self.show_guides.get(), "chord_colors": self.chord_colors.get()})
+        self.refresh()
+
+    def _set_theme(self) -> None:
+        self.colors = apply_theme(self.root, self.theme.get())
+        self._prefs_changed()
+
     def show_project_info(self) -> None:
         from .project_info import project_info
 
@@ -187,7 +204,7 @@ class PreviewApp:
 
     def _toggle_chord_colors(self) -> None:
         self.c.chord_colors = self.chord_colors.get()
-        self.refresh()
+        self._prefs_changed()
 
     def toggle_mute(self) -> None:
         self.audio.muted = not self.audio.muted
@@ -218,7 +235,7 @@ class PreviewApp:
         try:
             global_doc = load_global()
         except ValueError as exc:
-            self.status.configure(text=f"Global settings error: {exc}", foreground="#b00020")
+            self.status.configure(text=f"Global settings error: {exc}", foreground=self.colors["error"])
             return
         if layer == "project":
             if not self.c.path:
@@ -237,7 +254,7 @@ class PreviewApp:
         try:
             doc = LyricDocument(self.c.path, self.c.subtitle_set, load_global())
         except (LyricEditError, ValueError) as exc:
-            self.status.configure(text=f"Subtitle editor: {exc}", foreground="#b00020")
+            self.status.configure(text=f"Subtitle editor: {exc}", foreground=self.colors["error"])
             return
         LyricWindow(self.root, doc, current_frame=lambda: self.c.frame,
                     seek=lambda f: self._nav(lambda: self.c.seek(f)), on_saved=self.reload)
@@ -285,7 +302,7 @@ class PreviewApp:
         if self._busy or not self.c.project:
             return
         self._busy = True
-        self.status.configure(text=f"{label}…", foreground="#205080")
+        self.status.configure(text=f"{label}…", foreground=self.colors["info"])
 
         def progress(done, total):
             self.root.after(0, lambda: self.status.configure(text=f"{label}: {done}/{total} frames"))
@@ -293,9 +310,9 @@ class PreviewApp:
         def run():
             try:
                 result = job(progress)
-                msg, color = f"{label} done: {result}", "#206020"
+                msg, color = f"{label} done: {result}", self.colors["ok"]
             except Exception as exc:  # surfaced to the user, not swallowed
-                msg, color = f"{label} failed: {exc}", "#b00020"
+                msg, color = f"{label} failed: {exc}", self.colors["error"]
             self.root.after(0, lambda: (self.status.configure(text=msg, foreground=color),
                                         setattr(self, "_busy", False)))
 
@@ -342,7 +359,7 @@ class PreviewApp:
             self.slider.set(self.c.frame)
         if not self.c.error and not self._busy:
             text = str(self.c.path or "") + (f"   —   {self._note}" if self._note else "")
-            self.status.configure(text=text, foreground="#8a6d00" if self._note else "#606060")
+            self.status.configure(text=text, foreground=self.colors["warn"] if self._note else self.colors["muted"])
         title = f"MViser — {self.c.path.name}" if self.c.path else "MViser"
         self.root.title(title + (f" [{self.c.subtitle_set}]" if self.c.subtitle_set else ""))
 

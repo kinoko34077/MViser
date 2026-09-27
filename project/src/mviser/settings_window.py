@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import tkinter as tk
 from tkinter import ttk
+
+from .theme import current_palette
 from typing import Callable
 
 from .settings_model import TABS, SettingsDocument, SettingsError, format_value, parse_value
@@ -33,7 +35,7 @@ class SettingsWindow:
                 self._row(frame, i, field)
         bar = ttk.Frame(self.top, padding=8)
         bar.pack(fill="x")
-        self.error = ttk.Label(bar, foreground="#b00020")
+        self.error = ttk.Label(bar, foreground=current_palette(master)["error"])
         self.error.pack(side="left", fill="x", expand=True)
         ttk.Button(bar, text="Cancel", command=self.top.destroy).pack(side="right")
         ttk.Button(bar, text="Save", command=self.save).pack(side="right", padx=4)

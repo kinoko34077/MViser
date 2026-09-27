@@ -1,0 +1,62 @@
+# Manual verification checklist (canonical). Edit this file, not the Issue:
+#   python project/tools/manual_check.py --markdown   -> paste into the tracking Issue
+# status: pending | ok | ng | skip   (record details in `result`)
+schema_version: 1
+tracking_issue: 14
+environment_hint: "Windows 10/11, Python 3.10+ (python.org build with tkinter), after `knt.cmd setup`"
+checks:
+  - id: jp-font
+    area: rendering
+    from: "#6, #10"
+    steps:
+      - "python project/tools/manual_check.py --prepare"
+      - "python project/tools/run_mviser.py frame project/samples/sample.mvproj.yaml --time 4 -o project/output/check_h.png"
+      - "python project/tools/run_mviser.py frame project/samples/sample.mvproj.yaml --time 9.5 -o project/output/check_v.png"
+    expected: "Japanese lyrics and ruby render (no □); horizontal ruby above base, vertical ruby to the right"
+    status: pending
+    result: ""
+  - id: gui-basic
+    area: gui
+    from: "#10"
+    steps:
+      - "python project/tools/run_mviser.py gui project/samples/sample.mvproj.yaml"
+      - "Click / drag the timeline, use ←/→, ↑/↓, Space"
+      - "Edit project/samples/sample.mvproj.yaml in an editor and save"
+    expected: "Preview follows seek; readout shows time / measure:beat / chord (roman); saved edits appear within ~1 s"
+    status: pending
+    result: ""
+  - id: gui-audio
+    area: audio
+    from: "#12"
+    steps:
+      - "In the GUI press Space to play; press M to mute / unmute"
+    expected: "Click track is audible and the chord changes land on the accented clicks; no status warning about audio"
+    status: pending
+    result: ""
+  - id: gui-export
+    area: gui
+    from: "#10"
+    steps:
+      - "GUI: File → Export MP4…, then File → Export PNG frames…"
+    expected: "Status bar shows progress and 'done'; MP4 plays with audio; PNGs are numbered by frame"
+    status: pending
+    result: ""
+  - id: midi-fl
+    area: input
+    from: "#2 (MVP-1)"
+    steps:
+      - "Export a chord track from FL Studio as .mid next to a project file"
+      - "Add `imports: [{format: midi, path: <file>.mid, at: \"1:1\"}]` and set project.bpm to the FL tempo"
+      - "python project/tools/run_mviser.py inspect <project>"
+    expected: "Chords are split where the harmony changes; strums are merged; names look right (tune `window` / `min_duration` if not)"
+    status: pending
+    result: ""
+  - id: aviutl-ae
+    area: output
+    from: "#1 workflow"
+    steps:
+      - "python project/tools/run_mviser.py render project/samples/sample.mvproj.yaml --frames project/output/frames --start 0 --end 4"
+      - "Import the PNG sequence into AviUtl and/or After Effects"
+    expected: "Sequence imports at the project fps with correct length"
+    status: pending
+    result: ""

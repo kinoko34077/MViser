@@ -116,6 +116,24 @@ def cmd_gui(args) -> int:
     return run(args.project, args.subtitle_set)
 
 
+def cmd_handoff(args) -> int:
+    from .handoff import HandoffError, handoff
+
+    project = load_project(args.project, args.subtitle_set)
+    layers = tuple(x.strip() for x in args.layers.split(",") if x.strip())
+    name = args.name or Path(args.project).name.split(".")[0]
+    try:
+        result = handoff(project, Path(args.output), name, args.format, layers,
+                         Path(args.exo_template) if args.exo_template else None,
+                         Path(args.jsx_template) if args.jsx_template else None, _progress)
+    except HandoffError as exc:
+        print(f"[mviser] error: {exc}", file=sys.stderr)
+        return 2
+    for key, path in result.items():
+        print(f"{key}: {path}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="mviser", description="MViser MVP-0 renderer")
     parser.add_argument("--version", action="version", version=f"mviser {__version__}")
@@ -146,6 +164,16 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--format", choices=sorted(FORMATS), default="mp4",
                    help="mp4 (opaque) | prores4444 (.mov, alpha) | webm (VP9, alpha)")
     p.set_defaults(func=cmd_render)
+    p = sub.add_parser("handoff", help="split layers + AviUtl .exo + After Effects .jsx (MViser#29)")
+    p.add_argument("project")
+    p.add_argument("-o", "--output", default="output/handoff")
+    p.add_argument("--name")
+    p.add_argument("--format", choices=["prores4444", "webm"], default="prores4444")
+    p.add_argument("--layers", default=",".join(LAYERS))
+    p.add_argument("--exo-template")
+    p.add_argument("--jsx-template")
+    p.set_defaults(func=cmd_handoff)
+
     p = sub.add_parser("gui", help="preview window with timeline seek")
     p.add_argument("project", nargs="?")
     p.set_defaults(func=cmd_gui)

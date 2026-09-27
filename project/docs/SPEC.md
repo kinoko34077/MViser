@@ -49,6 +49,7 @@ Status: provisional (MViser#2 MVP-0). Long-term concept baseline: MViser#1.
 | `guides.py` | guideline overlay geometry |
 | `lyric_editor.py` / `lyric_window.py` | lyric CRUD over the project YAML / Tk view (MViser#25) |
 | `time_format.py` / `project_info.py` | time display modes / project info rows (MViser#27) |
+| `handoff.py` + `templates/` | AviUtl .exo / AE .jsx generation from split layers (MViser#29) |
 | `audio_player.py` | FFmpeg PCM decode, `sounddevice` output, audio-master clock, silent fallback (MViser#12) |
 
 ## Project schema (`schema_version: 1`)
@@ -196,6 +197,15 @@ YAML note: the loader disables YAML 1.1 base-60 numbers, so unquoted `at: 3:1` i
 would otherwise read 181). Quoting is still recommended for other YAML tools.
 
 GUI View → Time: absolute (mm:ss.ff) / tempo (M:B.bb) / frames for the readout; Help → Project info (MViser#27).
+
+## Editor handoff (MViser#29)
+
+`run_mviser.py handoff <project> -o <dir> [--format prores4444|webm] [--layers …] [--exo-template F] [--jsx-template F]`
+renders one alpha video per layer and writes `<name>.exo` (AviUtl exedit, cp932 / CRLF, one video object per layer —
+background on the bottom row — plus the audio object) and `<name>.jsx` (After Effects: comp with project size / fps /
+duration, layers imported bottom → top, audio). Both come from templates in `project/src/mviser/templates/`
+(`aviutl.exo.tmpl`, `aviutl_video_object.tmpl`, `aviutl_audio_object.tmpl`, `after_effects.jsx.tmpl`); exedit keys are
+unverified until MViser#14 `handoff`, and are fixed by editing the templates.
 
 ## Settings layers (MViser#16)
 

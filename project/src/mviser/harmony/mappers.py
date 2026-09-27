@@ -149,5 +149,7 @@ class PitchSetMapper:
         root = bass if bass is not None else classes[0]
         tones = tuple(Tone((c - root) % 1200) for c in classes)
         tones = tuple(sorted(tones, key=lambda t: t.cents))
-        return ChordSpec(value.get("name") or "?", root, tones, None, bass,
+        name = value.get("name") or (pitch_class_name(root) if len(classes) == 1 else "?")
+        quality = "note" if len(classes) == 1 else None
+        return ChordSpec(name, root, tones, quality, bass,
                          {"notation": self.name, "raw": dict(value)})

@@ -114,7 +114,7 @@ class FunctionAnalyzer:
         if context.key_cents is None:
             return spec
         quality = spec.quality or spec.analysis.get("identified", {}).get("quality")
-        if quality in (None, "UNKNOWN"):
+        if quality in (None, "UNKNOWN", "note"):
             return spec
         degree = round((spec.root_cents - context.key_cents) / 100) % 12
         minor = quality in MINOR_LIKE

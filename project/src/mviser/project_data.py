@@ -122,9 +122,9 @@ def normalize(raw: dict[str, Any], base_dir: Path | str = ".") -> dict[str, Any]
         if fmt not in IMPORTERS or not spec.get("path"):
             raise ProjectError(f"imports[{j}]: needs format {sorted(IMPORTERS)} and path")
         try:
-            start = Tempo(float(doc["project"]["bpm"]), int(doc["project"]["fps"])).to_seconds(spec.get("at", "1:1"))
-            start_beat = start / (60.0 / float(doc["project"]["bpm"]))
-            imported = IMPORTERS[fmt](Path(base_dir) / spec["path"], start_beat)
+            tempo = Tempo(float(doc["project"]["bpm"]), int(doc["project"]["fps"]))
+            start = tempo.to_seconds(spec.get("at", "1:1"))
+            imported = IMPORTERS[fmt](Path(base_dir) / spec["path"], spec, start, tempo.beat_sec)
         except (SourceError, TimelineError) as exc:
             raise ProjectError(f"imports[{j}]: {exc}") from exc
         for event in imported:

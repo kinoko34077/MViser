@@ -168,7 +168,7 @@ class McbImportTests(unittest.TestCase):
         (self.dir / "p.mcb").write_text(json.dumps(MCB), encoding="utf-8")
 
     def test_import_positions_and_tones(self):
-        events = import_mcb(self.dir / "p.mcb", start_beat=4)
+        events = import_mcb(self.dir / "p.mcb", {}, 2.0, 0.5)
         self.assertEqual([e["at"] for e in events], ["2:1", "3:1", "3:3"])
         self.assertEqual(events[0]["value"]["root"], {"cents": 900.0})
         self.assertEqual([t["cents"] for t in events[0]["value"]["tones"]], [0.0, 386.31, 701.96])

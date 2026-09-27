@@ -25,12 +25,14 @@ def _position(beat_index: float, start_beat: float) -> str:
     return f"{measure}:{beat:g}"
 
 
-def import_mcb(path: Path, start_beat: float = 0.0) -> list[dict[str, Any]]:
+def import_mcb(path: Path, spec: dict[str, Any] | None = None, start_seconds: float = 0.0,
+               beat_sec: float = 0.5) -> list[dict[str, Any]]:
     """μChordbot project (.mcb): progression parts -> tones-notation chord events.
 
     Pitch: root ``microStepInOctave`` / 100 = cents (μChordbot OCTAVE_MICROSTEP = 120000).
     Tones: ``localCent`` or the referenced PitchPreset ``cent``, plus ``octaveShift`` * 1200.
     """
+    start_beat = start_seconds / beat_sec
     try:
         data = json.loads(Path(path).read_text(encoding="utf-8"))
         payload = data["payload"]
@@ -70,4 +72,15 @@ def import_mcb(path: Path, start_beat: float = 0.0) -> list[dict[str, Any]]:
     return events
 
 
-IMPORTERS: dict[str, Callable[..., list[dict[str, Any]]]] = {"mcb": import_mcb}
+def _import_midi(path: Path, spec: dict[str, Any] | None = None, start_seconds: float = 0.0,
+                 beat_sec: float = 0.5) -> list[dict[str, Any]]:
+    from .midi_source import MidiSourceError, import_midi
+
+    try:
+        return import_midi(path, spec or {}, start_seconds)
+    except MidiSourceError as exc:
+        raise SourceError(str(exc)) from exc
+
+
+# format -> importer(path, spec, start_seconds, beat_sec) -> event dicts
+IMPORTERS: dict[str, Callable[..., list[dict[str, Any]]]] = {"mcb": import_mcb, "midi": _import_midi}

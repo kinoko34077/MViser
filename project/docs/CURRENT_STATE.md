@@ -10,11 +10,12 @@ Last verified: 2026-09-27 — MVP-0 (MViser#2) implemented on branch `claude/mvi
 - Harmony layer (ADR 0002): `ChordSpec` in cents; mappers `symbol` / `degree` / `tones` (microtonal, JI, EDO) /
   `pitch_set`; analyzers `pitch_classes` / `identify` (fail-open UNKNOWN) / `function` (roman, diatonic, function);
   `project.key`, `harmony.display` (symbol / source / roman); μChordbot `.mcb` import.
+- MVP-1 MIDI import (`mido`): chord segmentation (strum window, silence gaps) and single-note mode (ADR 0003).
 - Motion presets `cut` / `fade` / `slide`, beat-phase `pulse`, per-event override.
 - Automatic per-root chord colours with explicit overrides.
 - Lyric track (ruby parsed; base text only rendered).
 - CLI: `inspect`, `frame`, `render` (range `--start/--end`, `--frames`, `--no-audio`).
-- 47 unit / E2E tests covering all eight MViser#2 verification units and the harmony layer.
+- 52 unit / E2E tests covering all eight MViser#2 verification units, the harmony layer and MIDI import.
 
 ## MViser#2 MVP-0 acceptance
 
@@ -33,8 +34,7 @@ SceneState-based background+label, enter animation, frame sequence, audio MP4, b
 ## Next work
 
 1. KiNoTch. review of the rendered sample look (colours, font sizes, motion feel).
-2. MVP-1: MIDI source (`imports: format: midi`) → `pitch_set` events; the identify analyzer already provides
-   candidate / UNKNOWN resolution.
+2. Try MIDI import with real FL Studio exports; tune `window` / `min_duration` defaults.
 3. Analysis-driven styling (e.g. colour or motion by `function`).
 4. Then #1 Priority A/B items (ruby rendering, subtitle sets, GUI preview).
 

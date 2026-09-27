@@ -26,7 +26,8 @@ Status: provisional (MViser#2 MVP-0). Long-term concept baseline: MViser#1.
 | `harmony/mappers.py` | notation → `ChordSpec`: `symbol`, `degree`, `tones`, `pitch_set` |
 | `harmony/analyzers.py` | `ChordSpec` → analysis: `pitch_classes`, `identify`, `function` |
 | `harmony/registry.py` | `HarmonyRegistry` (register / map / analyze / resolve), `HarmonyContext` (key) |
-| `harmony/sources.py` | external progressions → events: `mcb` (μChordbot) |
+| `harmony/sources.py` | external progressions → events: `mcb` (μChordbot), `midi` |
+| `harmony/midi_source.py` | SMF via `mido`: notes (file tempo map) → pitch-set segments / single notes |
 | `timeline.py` | `Tempo` (fixed BPM, 4/4, FPS, offset), `Event{start_frame, end_frame, type, payload}`, `Track` active-event lookup, local progress, beat phase |
 | `ruby.py` | なろう式ルビ parse; MVP-0 renders base text only |
 | `motion.py` | `cut` / `fade` / `slide` enter presets and beat `pulse`, pure functions of local time |
@@ -65,6 +66,8 @@ harmony:
   display: symbol | source | roman                      # chord label source
 imports:                     # external progression sources, appended to events
   - {format: mcb, path: song.mcb, at: "1:1", use_names: false}
+  - {format: midi, path: song.mid, at: "1:1", mode: chords|notes, window: 0.05,
+     min_duration: 0.0, channels: [0], tracks: [1], exclude_drums: true}
 motion:
   enter: cut | fade | slide  # default fade
   enter_duration: seconds    # default 0.2
@@ -97,6 +100,15 @@ lyrics: [{at, text, ...}]    # shorthand → events(type: lyric)
 seen by scene/render. `identify` matches 12-TET templates within ±35 cents (JI 6:5, 7:4 accepted; quarter-tones not)
 and fails open to `UNKNOWN` with the raw pitch set (`display: "?(C-C#-D)"`). `function` adds `roman`, `degree`,
 `diatonic`, `function` (tonic / subdominant / dominant / borrowed/chromatic) and `approximate` for microtonal chords.
+
+## MIDI import (MVP-1)
+
+- Times come from the MIDI file's own tempo map; `at` maps MIDI time 0 onto the project timeline.
+  `project.bpm` still drives beat phase, so keep it equal to the MIDI tempo for pulse sync.
+- `chords`: a new event whenever the sounding pitch set changes; boundaries within `window` s are merged
+  (strums); silence produces no chord; a held single note is a one-note event displayed as its note name.
+- `notes`: one event per note (melody). Channel 10 (drums) is skipped unless `exclude_drums: false`.
+- Events are `pitch_set` notation → `identify` names them or reports `?(…)` (fail-open).
 
 ## Behavior
 

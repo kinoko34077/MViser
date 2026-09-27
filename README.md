@@ -13,6 +13,7 @@ python project/tools/run_mviser.py render project/samples/sample.mvproj.yaml -o 
 python project/tools/run_mviser.py render project/samples/sample.mvproj.yaml --frames project/output/frames --start 4 --end 8
 python project/tools/run_mviser.py frame  project/samples/sample.mvproj.yaml --time 4.0 -o project/output/f.png
 python project/tools/run_mviser.py inspect project/samples/sample.mvproj.yaml
+# MIDI: add `imports: [{format: midi, path: song.mid}]` to a project (see project/docs/SPEC.md)
 ```
 
 ## Documents

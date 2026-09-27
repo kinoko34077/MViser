@@ -37,7 +37,9 @@ Status: provisional (MViser#2 MVP-0). Long-term concept baseline: MViser#1.
 | `scene.py` | `SceneState` resolution and chord background colour |
 | `render_engine.py` | Pillow drawing |
 | `video.py` | frame range, PNG sequence, FFmpeg MP4 (adapter) |
-| `cli.py` | `inspect` / `frame` / `render` surface |
+| `cli.py` | `inspect` / `frame` / `render` / `gui` surface |
+| `preview_controller.py` | Tk-free preview state: seek, chord jump, readout, timeline geometry, auto-reload, export |
+| `gui.py` | tkinter view (MViser#10) |
 
 ## Project schema (`schema_version: 1`)
 
@@ -142,7 +144,15 @@ and fails open to `UNKNOWN` with the raw pitch set (`display: "?(C-C#-D)"`). `fu
 - Invalid schema/time/chord/colour → `ProjectError` (CLI exit 2) naming the field.
 - Unrecognised chord suffix after a known quality is kept in `extension`, never dropped.
 - FFmpeg: `MVISER_FFMPEG` → PATH → `imageio-ffmpeg` bundled binary.
-- Font: `style.font_path` → system candidates (Noto CJK, Yu Gothic, Meiryo, DejaVu…) → Pillow default.
+- Font: `style.font_path` → CJK candidates (Yu Gothic, Meiryo, Hiragino, Noto CJK, IPA, WenQuanYi) → `fc-match sans-serif:lang=ja` → DejaVu / Arial → Pillow default.
+
+## Preview GUI (MViser#10)
+
+`python project/tools/run_mviser.py gui [project] [--subtitle-set NAME]` — preview scaled to the window, timeline
+(chord / lyric rows, click or drag to seek), slider, play/pause at project fps (no audio yet), readout
+(time, measure:beat, frame, chord + roman, lyric). Keys: Space play, ←/→ frame, Shift+←/→ 1 s, ↑/↓ prev/next chord,
+Home, F5 reload, Ctrl+O open. The project file is polled and reloaded on save; a broken save keeps the last good
+project and shows the error. File menu exports MP4 / PNG frames in a background thread; View menu switches subtitle sets.
 
 ## Non-goals (MVP-0)
 

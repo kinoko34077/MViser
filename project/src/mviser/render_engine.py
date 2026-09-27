@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import shutil
+import subprocess
 from functools import lru_cache
 from pathlib import Path
 
@@ -11,19 +13,29 @@ from .lyric_layout import layout_lyric
 from .motion import MotionState
 from .scene import SceneState
 
+# CJK-capable fonts first so lyrics render on every OS; Latin-only fonts last.
 FONT_CANDIDATES = (
-    "NotoSansCJK-Regular.ttc",
-    "NotoSansJP-Regular.ttf",
-    "YuGothM.ttc",
-    "meiryo.ttc",
-    "msgothic.ttc",
-    "DejaVuSans.ttf",
-    "Arial.ttf",
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    "YuGothM.ttc", "C:/Windows/Fonts/YuGothM.ttc", "meiryo.ttc", "C:/Windows/Fonts/meiryo.ttc", "msgothic.ttc",
+    "/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc", "/System/Library/Fonts/Hiragino Sans GB.ttc",
+    "NotoSansCJK-Regular.ttc", "NotoSansJP-Regular.ttf",
     "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
-    "C:/Windows/Fonts/YuGothM.ttc",
-    "C:/Windows/Fonts/meiryo.ttc",
+    "/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf",
+    "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
 )
+LATIN_FALLBACKS = ("DejaVuSans.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "Arial.ttf")
+
+
+@lru_cache(maxsize=1)
+def _fontconfig_cjk() -> tuple[str, ...]:
+    """Ask fontconfig (Linux/macOS with fc-match) for a Japanese-capable font."""
+    exe = shutil.which("fc-match")
+    if not exe:
+        return ()
+    try:
+        out = subprocess.run([exe, "-f", "%{file}", "sans-serif:lang=ja"], capture_output=True, text=True, timeout=5)
+    except (OSError, subprocess.SubprocessError):
+        return ()
+    return (out.stdout.strip(),) if out.returncode == 0 and out.stdout.strip() else ()
 
 
 def _rgb(color: str) -> tuple[int, int, int]:
@@ -32,7 +44,8 @@ def _rgb(color: str) -> tuple[int, int, int]:
 
 @lru_cache(maxsize=32)
 def load_font(font_path: str | None, size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
-    candidates = ([font_path] if font_path else []) + list(FONT_CANDIDATES)
+    candidates = ([font_path] if font_path else []) + list(FONT_CANDIDATES) + list(_fontconfig_cjk()) \
+        + list(LATIN_FALLBACKS)
     for candidate in candidates:
         try:
             return ImageFont.truetype(candidate, size)

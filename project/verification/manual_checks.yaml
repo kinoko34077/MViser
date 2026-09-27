@@ -41,6 +41,23 @@ checks:
     expected: "Status bar shows progress and 'done'; MP4 plays with audio; PNGs are numbered by frame"
     status: pending
     result: ""
+  - id: gui-settings
+    area: gui
+    from: "#16"
+    steps:
+      - "GUI: Settings → Project settings…, override Motion → Beat pulse, Save"
+      - "GUI: Settings → Global settings…, set Style → Text colour, Save; open another project"
+    expected: "Preview updates after Save; project YAML keeps its comments and only gains the overridden key; global value applies to projects that do not override it"
+    status: pending
+    result: ""
+  - id: gui-waveform
+    area: gui
+    from: "#18"
+    steps:
+      - "Open a project with your own song audio in the GUI"
+    expected: "Waveform row under the lyric row matches the song; measure lines and numbers line up with bar starts; playback stays smooth"
+    status: pending
+    result: ""
   - id: midi-fl
     area: input
     from: "#2 (MVP-1)"

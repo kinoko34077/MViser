@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import threading
 import time
 import tkinter as tk
@@ -12,9 +13,11 @@ from PIL import ImageTk
 
 from . import __version__
 from .audio_player import AudioPlayer
+from .global_settings import global_path, load_global
 from .preview_controller import PreviewController
+from .settings_model import SettingsDocument
 
-TIMELINE_HEIGHT = 64
+TIMELINE_HEIGHT = 100
 POLL_MS = 700
 
 
@@ -51,6 +54,10 @@ class PreviewApp:
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self.root.destroy)
         menu.add_cascade(label="File", menu=file_menu)
+        settings_menu = tk.Menu(menu, tearoff=False)
+        settings_menu.add_command(label="Project settings…", command=lambda: self.open_settings("project"))
+        settings_menu.add_command(label="Global settings…", command=lambda: self.open_settings("global"))
+        menu.add_cascade(label="Settings", menu=settings_menu)
         self.view_menu = tk.Menu(menu, tearoff=False)
         menu.add_cascade(label="View", menu=self.view_menu)
         help_menu = tk.Menu(menu, tearoff=False)
@@ -128,6 +135,7 @@ class PreviewApp:
             self.toggle_play()
 
     def _after_load(self, error: str | None) -> None:
+        self._timeline_key = None  # force timeline redraw (blocks, grid, waveform)
         if self.playing:
             self.toggle_play()
         self._load_audio()
@@ -141,6 +149,22 @@ class PreviewApp:
         path = filedialog.askopenfilename(filetypes=[("MViser project", "*.yaml *.yml"), ("All", "*.*")])
         if path:
             self._after_load(self.c.load(path))
+
+    def open_settings(self, layer: str) -> None:
+        from .settings_window import SettingsWindow
+
+        try:
+            global_doc = load_global()
+        except ValueError as exc:
+            self.status.configure(text=f"Global settings error: {exc}", foreground="#b00020")
+            return
+        if layer == "project":
+            if not self.c.path:
+                return
+            doc = SettingsDocument(self.c.path, "project", global_doc)
+        else:
+            doc = SettingsDocument(global_path(), "global")
+        SettingsWindow(self.root, doc, on_saved=self.reload)
 
     def reload(self) -> None:
         if self.c.path:
@@ -235,17 +259,40 @@ class PreviewApp:
 
     def _draw_timeline(self) -> None:
         t = self.timeline
-        t.delete("all")
         width = max(t.winfo_width(), 2)
+        key = (width, id(self.c.project), self.c.subtitle_set)
+        if key != getattr(self, "_timeline_key", None):
+            self._timeline_key = key
+            t.delete("all")
+            self._draw_timeline_static(width)
+        t.delete("head")
+        x = self.c.x_at_frame(self.c.frame, width)
+        t.create_line(x, 0, x, TIMELINE_HEIGHT, fill="#ff4040", width=2, tags="head")
+
+    def _draw_timeline_static(self, width: int) -> None:
+        t = self.timeline
+        wave_top, wave_bottom = 64, TIMELINE_HEIGHT - 2
+        grid = self.c.grid(width)
+        measures = [g for g in grid if g[1]]
+        measure_px = width / max(len(measures), 1)
+        label_every = max(1, math.ceil(28 / max(measure_px, 1e-6)))
+        for x, is_measure, number in grid:
+            t.create_line(x, 0 if is_measure else wave_top, x, TIMELINE_HEIGHT,
+                          fill="#3a3a3a" if is_measure else "#262626")
+            if is_measure and (number - 1) % label_every == 0:
+                t.create_text(x + 2, wave_top + 1, text=str(number), anchor="nw", fill="#808080",
+                              font=("TkDefaultFont", 7))
+        peaks = self.c.waveform(width)
+        if peaks is not None:
+            mid, half = (wave_top + wave_bottom) / 2, (wave_bottom - wave_top) / 2
+            for x, (lo, hi) in enumerate(peaks):
+                t.create_line(x, mid - hi * half, x, mid - lo * half + 1, fill="#4fa3c7")
         row = {"chord": (4, 30), "lyric": (34, 60)}
         for b in self.c.timeline_blocks(width):
             y0, y1 = row[b["track"]]
             t.create_rectangle(b["x0"], y0, max(b["x1"] - 1, b["x0"] + 1), y1, fill=b["color"], outline="#000000")
             if b["x1"] - b["x0"] > 24:
                 t.create_text(b["x0"] + 4, (y0 + y1) / 2, text=b["label"], anchor="w", fill="#ffffff")
-        x = self.c.x_at_frame(self.c.frame, width)
-        t.create_line(x, 0, x, TIMELINE_HEIGHT, fill="#ff4040", width=2)
-
 
 def run(path: str | None = None, subtitle_set: str | None = None) -> int:
     controller = PreviewController(path, subtitle_set) if path else PreviewController(subtitle_set=subtitle_set)

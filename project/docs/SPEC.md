@@ -40,6 +40,10 @@ Status: provisional (MViser#2 MVP-0). Long-term concept baseline: MViser#1.
 | `cli.py` | `inspect` / `frame` / `render` / `gui` surface |
 | `preview_controller.py` | Tk-free preview state: seek, chord jump, readout, timeline geometry, auto-reload, export |
 | `gui.py` | tkinter view (MViser#10) |
+| `global_settings.py` | Global settings path / validation / load |
+| `settings_model.py` | field catalogue, layered effective values, comment-preserving YAML edits |
+| `settings_window.py` | tkinter settings Notebook |
+| `waveform.py` | waveform peaks (numpy) and beat grid geometry |
 | `audio_player.py` | FFmpeg PCM decode, `sounddevice` output, audio-master clock, silent fallback (MViser#12) |
 
 ## Project schema (`schema_version: 1`)
@@ -156,6 +160,19 @@ Home, F5 reload, Ctrl+O open, M mute. The project file is polled and reloaded on
 project and shows the error. Audio is decoded once by FFmpeg (any format it reads, from `audio.start`) and played
 with `sounddevice`; the audio position is the playback clock. Without sounddevice / PortAudio / a device, playback
 is silent on the wall clock and the status bar says why. File menu exports MP4 / PNG frames in a background thread; View menu switches subtitle sets.
+
+Timeline (MViser#18): chord row, lyric row, and a waveform row (FFmpeg-decoded 4 kHz mono peaks aligned to the
+project length; silence padding when the audio is shorter) with a beat / measure grid and measure numbers thinned by
+zoom. Static parts are cached and only the playhead is redrawn during playback.
+
+## Settings layers (MViser#16)
+
+Effective value = built-in defaults → **Global** file → **Project** file → per-event values.
+Global file: `MVISER_GLOBAL` env, else `%APPDATA%/MViser/global.yaml` (Windows),
+`~/Library/Application Support/MViser/global.yaml` (macOS), `$XDG_CONFIG_HOME/mviser/global.yaml` (Linux).
+Global may hold `style`, `motion`, `harmony` and `project.fps` / `project.resolution` only.
+GUI Settings → Project… / Global… edits one layer; each field shows where its value comes from, an "override"
+toggle, and Save writes only overridden keys (comments preserved via `ruamel.yaml`) after full validation.
 
 ## Non-goals (MVP-0)
 

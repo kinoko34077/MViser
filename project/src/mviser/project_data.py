@@ -128,7 +128,8 @@ def _select_subtitle_set(doc: dict[str, Any], requested: str | None) -> None:
         doc["style"] = _merge(doc["style"], active["style"])
 
 
-def normalize(raw: dict[str, Any], base_dir: Path | str = ".", subtitle_set: str | None = None) -> dict[str, Any]:
+def normalize(raw: dict[str, Any], base_dir: Path | str = ".", subtitle_set: str | None = None,
+              global_doc: dict[str, Any] | None = None) -> dict[str, Any]:
     """Validate a raw document and fill defaults. Returns a new dict."""
     if not isinstance(raw, dict):
         raise ProjectError("project file must be a mapping")
@@ -139,7 +140,10 @@ def normalize(raw: dict[str, Any], base_dir: Path | str = ".", subtitle_set: str
     unknown = set(raw) - known
     if unknown:
         raise ProjectError(f"unknown top-level keys: {sorted(unknown)}")
-    doc = _merge({k: v for k, v in DEFAULTS.items() if v is not None}, {k: v for k, v in raw.items() if v is not None})
+    base = {k: v for k, v in DEFAULTS.items() if v is not None}
+    if global_doc:
+        base = _merge(base, global_doc)  # built-in -> Global -> Project (MViser#16)
+    doc = _merge(base, {k: v for k, v in raw.items() if v is not None})
     doc["schema_version"] = SCHEMA_VERSION
     _select_subtitle_set(doc, subtitle_set)
 
@@ -318,13 +322,21 @@ def compile_project(doc: dict[str, Any], base_dir: Path | str = ".") -> Compiled
     return CompiledProject(doc, base_dir, tempo, total_frames, tracks, context)
 
 
-def load_project(path: Path | str, subtitle_set: str | None = None) -> CompiledProject:
+def load_project(path: Path | str, subtitle_set: str | None = None,
+                 global_doc: dict[str, Any] | None = None) -> CompiledProject:
     path = Path(path)
     try:
         raw = yaml.safe_load(path.read_text(encoding="utf-8"))
     except yaml.YAMLError as exc:
         raise ProjectError(f"{path}: invalid YAML: {exc}") from exc
-    return compile_project(normalize(raw or {}, path.parent, subtitle_set), path.parent)
+    if global_doc is None:
+        from .global_settings import GlobalSettingsError, load_global
+
+        try:
+            global_doc = load_global()
+        except GlobalSettingsError as exc:
+            raise ProjectError(f"global settings: {exc}") from exc
+    return compile_project(normalize(raw or {}, path.parent, subtitle_set, global_doc), path.parent)
 
 
 def save_project(doc: dict[str, Any], path: Path | str) -> None:

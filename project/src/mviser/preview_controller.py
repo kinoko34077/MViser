@@ -12,6 +12,7 @@ from .project_data import CompiledProject, ProjectError, load_project
 from .render_engine import Renderer
 from .scene import chord_background, resolve_scene_state
 from .timeline import BEATS_PER_MEASURE
+from .waveform import beat_grid, waveform_peaks
 from .video import FrameRange, write_frame_sequence, write_video
 
 
@@ -24,6 +25,9 @@ class PreviewController:
         self.frame = 0
         self.error: str | None = None
         self._mtime: float | None = None
+        self._wave_pcm = None
+        self._wave_key = None
+        self._peaks_cache: dict[tuple, object] = {}
         if path is not None:
             self.load(path)
 
@@ -159,6 +163,44 @@ class PreviewController:
                     "start_frame": e.start_frame,
                 })
         return blocks
+
+    # -- waveform / grid (MViser#18) --------------------------------------------
+    WAVE_RATE = 4000
+
+    def _wave_source(self):
+        project = self.project
+        path = project.audio_path if project else None
+        if path is None or not path.exists():
+            return None
+        key = (str(path), path.stat().st_mtime, project.audio_start)
+        if key != self._wave_key:
+            from .audio_player import decode_pcm
+
+            try:
+                self._wave_pcm = decode_pcm(path, project.audio_start, self.WAVE_RATE, 1)
+            except (RuntimeError, OSError):
+                self._wave_pcm = None
+            self._wave_key, self._peaks_cache = key, {}
+        return self._wave_pcm
+
+    def waveform(self, width: int):
+        """Peaks aligned to the timeline width (audio beyond the project end is cut), or None."""
+        pcm = self._wave_source()
+        if pcm is None or width <= 0:
+            return None
+        cache_key = (width, self.total_frames)
+        if cache_key not in self._peaks_cache:
+            samples = int(self.total_frames / self.fps * self.WAVE_RATE)
+            clip = pcm[:samples]
+            if len(clip) < samples:  # audio shorter than the project: pad with silence
+                import numpy as np
+
+                clip = np.concatenate([clip, np.zeros((samples - len(clip), clip.shape[1]), dtype=clip.dtype)])
+            self._peaks_cache[cache_key] = waveform_peaks(clip, width)
+        return self._peaks_cache[cache_key]
+
+    def grid(self, width: int):
+        return beat_grid(self.project.tempo, self.total_frames, width) if self.project else []
 
     # -- export --------------------------------------------------------------
     def export_video(self, out: str | Path, with_audio: bool = True, progress=None) -> Path:

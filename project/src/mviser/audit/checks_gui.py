@@ -104,8 +104,14 @@ def gui_basic(ctx: AuditContext) -> CheckResult:
         _pump(app.root)
         seek_frame, readout = app.c.frame, app.info.cget("text")
         app.toggle_play()
-        _pump(app.root, 1.0)
+        audio_driven = app._audio_clock
+        trace, t0 = [], time.perf_counter()
+        while time.perf_counter() - t0 < 1.0:
+            app.root.update()
+            trace.append((round(time.perf_counter() - t0, 3), app.c.frame, app.audio.current_frame()))
+            time.sleep(0.05)
         played = app.c.frame - seek_frame
+        faults = list(app.clock_faults)
         app.toggle_play()
         text = project.read_text(encoding="utf-8")
         project.write_text(text.replace("pulse: 0.04", "pulse: 0.09"), encoding="utf-8")
@@ -115,13 +121,16 @@ def gui_basic(ctx: AuditContext) -> CheckResult:
         reloaded = app.c.project.doc["motion"]["pulse"]
         shot = _screenshot(app.root, ctx.artifact("gui_basic.png"))
     expected_mid = app.c.total_frames // 2
-    ok = abs(seek_frame - expected_mid) <= 2 and ":" in readout and 15 <= played <= 45 and reloaded == 0.09
+    ok = abs(seek_frame - expected_mid) <= 2 and ":" in readout and 15 <= played <= 45 and reloaded == 0.09 \
+        and not faults
     return CheckResult("gui-basic", PASS if ok else FAIL,
                        f"seek→f{seek_frame}, readout '{readout[:40]}…', +{played} frames in 1 s, reload pulse={reloaded}",
                        values={"seek_frame": seek_frame, "expected_frame": expected_mid, "readout": readout,
-                               "frames_played_1s": played, "reloaded_pulse": reloaded},
-                       rule="timeline click at 50 % seeks to the middle frame (±2); readout shows time; silent playback "
-                            "advances 15–45 frames per second of wall time; saved YAML change is picked up by polling",
+                               "frames_played_1s": played, "reloaded_pulse": reloaded,
+                               "audio_driven": audio_driven, "audio_clock_faults": faults,
+                               "trace_s_frame_audioframe": trace[::2]},
+                       rule="timeline click at 50 % seeks to the middle frame (±2); readout shows time; playback "
+                            "(audio or wall clock) never leads real time; advances 15–45 frames per second of wall time; saved YAML change is picked up by polling",
                        artifacts=[ctx.rel(Path(shot))] if shot else [])
 
 

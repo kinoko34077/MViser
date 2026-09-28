@@ -62,6 +62,8 @@ FORMATS: dict[str, tuple[str, list[str], bool, list[str]]] = {
                             "-vendor", "apl0"], True, ["-c:a", "pcm_s16le"]),
     "webm": (".webm", ["-c:v", "libvpx-vp9", "-pix_fmt", "yuva420p", "-b:v", "0", "-crf", "30",
                        "-row-mt", "1"], True, ["-c:a", "libopus", "-b:a", "160k"]),
+    # uncompressed 32-bit AVI: read by AviUtl without input plugins (MViser#42); ~110 MB/s at 720p30
+    "avi-rgba": (".avi", ["-c:v", "rawvideo", "-pix_fmt", "bgra"], True, ["-c:a", "pcm_s16le"]),
 }
 
 

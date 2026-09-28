@@ -82,7 +82,7 @@ def alpha_layers(ctx: AuditContext) -> CheckResult:
     size = project.resolution
     rng = FrameRange(0, int(project.fps * 5))
     values, ok = {}, True
-    for fmt, ext in (("prores4444", ".mov"), ("webm", ".webm")):
+    for fmt, ext in (("prores4444", ".mov"), ("webm", ".webm"), ("avi-rgba", ".avi")):
         out = ctx.artifact(f"alpha_text{ext}")
         write_video(project, out, rng, with_audio=False, layers=("chords", "lyrics"), fmt=fmt)
         frames = decode_frames(out, (size[0] // 4, size[1] // 4), "rgba", limit=rng.end)
@@ -92,13 +92,16 @@ def alpha_layers(ctx: AuditContext) -> CheckResult:
                        "transparent_ratio": round(float((alpha == 0).mean()), 3), "frames": int(len(frames))}
         ok &= values[fmt]["corner_alpha_max"] == 0 and values[fmt]["opaque_pixels"] > 50 \
             and values[fmt]["transparent_ratio"] > 0.8
+        if fmt == "avi-rgba":  # ~550 MB for 5 s; keep the measurement, not the file
+            values[fmt]["bytes"] = out.stat().st_size
+            out.unlink()
     seq = write_frame_sequence(project, ctx.work / "alpha_png", FrameRange(60, 61), layers=("lyrics",))
     from PIL import Image
     png = Image.open(seq[0])
     values["png_mode"] = png.mode
     ok &= png.mode == "RGBA"
     return CheckResult("alpha-layers", PASS if ok else FAIL,
-                       "ProRes 4444 / WebM decode back to RGBA with transparent background and opaque glyphs",
+                       "ProRes 4444 / WebM / AVI-RGBA decode back to RGBA with transparent background and opaque glyphs",
                        values=values, rule="decoded corner alpha 0; > 80 % transparent; > 50 opaque glyph pixels; "
                                            "PNG layer is RGBA",
                        artifacts=[ctx.rel(ctx.artifact("alpha_text.mov")), ctx.rel(ctx.artifact("alpha_text.webm"))])

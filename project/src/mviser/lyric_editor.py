@@ -10,6 +10,9 @@ from typing import Any
 from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 from ruamel.yaml.scalarstring import DoubleQuotedScalarString
+from ruamel.yaml.error import YAMLError
+
+from .durable_io import atomic_write_text
 
 from .project_data import ProjectError, compile_project, normalize
 from .ruby import strip_ruby
@@ -55,7 +58,10 @@ class LyricDocument:
         self._yaml = YAML()
         self._yaml.preserve_quotes = True
         self._yaml.indent(mapping=2, sequence=4, offset=2)
-        self.data = self._yaml.load(self.path.read_text(encoding="utf-8")) or CommentedMap()
+        try:
+            self.data = self._yaml.load(self.path.read_text(encoding="utf-8")) or CommentedMap()
+        except YAMLError as exc:
+            raise LyricEditError(f"{self.path}: invalid YAML: {exc}") from exc
         compiled = self._compiled()
         available = compiled.doc["subtitle_sets"]
         if subtitle_set is not None and subtitle_set not in available and not (subtitle_set == "default"
@@ -201,7 +207,7 @@ class LyricDocument:
 
     def save(self) -> None:
         self.validate()
-        self.path.write_text(self.dumps(), encoding="utf-8")
+        atomic_write_text(self.path, self.dumps())
 
 
 def display_text(row: LyricRow) -> str:

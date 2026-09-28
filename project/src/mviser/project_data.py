@@ -10,6 +10,8 @@ from typing import Any
 
 import yaml
 
+from .durable_io import atomic_write_text
+
 from .harmony import ChordSpec, HarmonyContext, MappingError, default_registry
 from .harmony.sources import IMPORTERS, SourceError
 from .motion import PRESETS
@@ -396,7 +398,8 @@ def load_project(path: Path | str, subtitle_set: str | None = None,
 
 
 def save_project(doc: dict[str, Any], path: Path | str) -> None:
-    Path(path).write_text(yaml.safe_dump(doc, allow_unicode=True, sort_keys=False), encoding="utf-8")
+    text = yaml.safe_dump(doc, allow_unicode=True, sort_keys=False)
+    atomic_write_text(path, text)
 
 
 def chord_display(spec: ChordSpec, raw: Any, mode: str) -> str:

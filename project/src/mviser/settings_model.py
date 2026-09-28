@@ -11,6 +11,9 @@ from typing import Any
 
 from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap
+from ruamel.yaml.error import YAMLError
+
+from .durable_io import atomic_write_text
 
 from .global_settings import GLOBAL_SECTIONS, GlobalSettingsError, validate_global
 from .lyric_layout import ALIGNS
@@ -131,7 +134,10 @@ class SettingsDocument:
         self._yaml.preserve_quotes = True
         self._yaml.indent(mapping=2, sequence=4, offset=2)
         if self.path.exists():
-            self.data = self._yaml.load(self.path.read_text(encoding="utf-8")) or CommentedMap()
+            try:
+                self.data = self._yaml.load(self.path.read_text(encoding="utf-8")) or CommentedMap()
+            except YAMLError as exc:
+                raise SettingsError(f"{self.path}: invalid YAML: {exc}") from exc
         else:
             self.data = CommentedMap()
 
@@ -196,5 +202,4 @@ class SettingsDocument:
 
     def save(self) -> None:
         self.validate()
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(self.dumps(), encoding="utf-8")
+        atomic_write_text(self.path, self.dumps())

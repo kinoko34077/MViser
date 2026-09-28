@@ -36,6 +36,7 @@ implemented (status table on MViser#1). Feature sections name the issue that int
 | `lyric_layout.py` | pure glyph layout for ruby / vertical lyrics (MViser#6) |
 | `motion.py` | `cut` / `fade` / `slide` enter presets and beat `pulse`, pure functions of local time |
 | `project_data.py` | YAML load/save, validation, defaults, compilation |
+| `durable_io.py` | same-directory staged text write + fsync + atomic replacement for accepted YAML files |
 | `scene.py` | `SceneState` resolution and chord background colour |
 | `render_engine.py` | Pillow drawing |
 | `video.py` | frame range, PNG sequence, FFmpeg MP4 (adapter) |
@@ -229,6 +230,19 @@ Global file: `MVISER_GLOBAL` env, else `%APPDATA%/MViser/global.yaml` (Windows),
 Global may hold `style`, `motion`, `harmony` and `project.fps` / `project.resolution` only.
 GUI Settings → Project… / Global… edits one layer; each field shows where its value comes from, an "override"
 toggle, and Save writes only overridden keys (comments preserved via `ruamel.yaml`) after full validation.
+
+### YAML persistence durability (MViser#40)
+
+Project YAML, lyric-editor saves, and Project / Global Settings saves publish through one durable text-write helper.
+The caller serializes (and editable documents validate) before publication; the helper writes a temporary file in the
+target directory, flushes and `fsync`s that staged file, preserves an existing target's permission bits when possible,
+then publishes with `os.replace`. Before that replacement succeeds, any write / flush / fsync / replace failure leaves
+the previously accepted target bytes unchanged and removes the staged file. On filesystems where `os.replace` is
+atomic, readers therefore observe the old complete file or the new complete file, not a partial in-place overwrite.
+
+This guarantee does **not** include parent-directory `fsync`, so it is not a claim of directory-metadata persistence
+across sudden power loss. Corrupt existing YAML is reported as a bounded project/settings/lyric error and is never
+silently replaced as part of load recovery.
 
 ## Non-goals (current)
 

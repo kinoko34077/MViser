@@ -1,13 +1,17 @@
 # Current State
 
-Last verified: 2026-09-27 — `main` after PR #36 (40d71c9) plus the documentation audit PR; CI green on Ubuntu pwsh /
-Windows pwsh / Windows PowerShell 5.1; `knt doctor` OK. Version 0.2.0.
+Last verified: 2026-09-28 — current tree includes the MViser#40 durable-YAML persistence repair, based on `main`
+`e2f2078`; baseline GitHub Verify / MViser audit are green. Version 0.2.0.
 
 ## Implemented (by area)
 
 **Base / tooling**
 - KiNoTch. Repository Base 0.5.9 (profile `cli`; CLI Default OVERRIDE, ci-test Default DISABLED). Runtime not used (ADR 0001).
 - Dependencies per ADR 0003: Pillow, PyYAML, imageio-ffmpeg, mido, numpy, sounddevice, ruamel.yaml; tkinter for the GUI.
+
+**Persistence**
+- Project YAML, lyric-editor, and Project / Global Settings saves use same-directory staged writes, staged-file fsync, and atomic replacement (#40); pre-publication failures preserve the prior accepted file.
+- Corrupt YAML opened through lyric/settings editing surfaces as a bounded domain error without recovery overwrite.
 
 **Input / harmony**
 - `.mvproj.yaml` schema v1; unquoted `M:B` positions read correctly (YAML base-60 disabled) (#25).
@@ -32,7 +36,7 @@ Windows pwsh / Windows PowerShell 5.1; `knt doctor` OK. Version 0.2.0.
 **CLI**: `inspect`, `frame`, `render` (`--start/--end`, `--frames`, `--layers`, `--split-layers`, `--format`,
 `--subtitle-set`, `--all-subtitle-sets`, `--no-audio`), `handoff`, `gui`.
 
-**Tests**: 145 unit / E2E tests (`knt verify`), incl. FFmpeg round trips and headless GUI models.
+**Tests**: unit / E2E suite includes deterministic YAML persistence failure-injection coverage (#40), FFmpeg round trips and headless GUI models.
 
 ## Issue map
 
@@ -47,6 +51,7 @@ Windows pwsh / Windows PowerShell 5.1; `knt doctor` OK. Version 0.2.0.
 | #45 local check request (Codex etc.) | open — tasks for #41 / #42 on the owner's Windows PC |
 | #42 AviUtl cannot read .mov handoff | owner chose L-SMASH Works + .mov default (avi-rgba kept as option); re-check requested in #45 |
 | #38 automated audit | `mviser audit` + workflow *MViser audit* (ADR 0005, `REVIEW_PROTOCOL.md`) |
+| #40 durable YAML persistence | done — shared staged/fsync/atomic replacement path with deterministic failure-injection tests |
 
 ## Known issues / constraints
 

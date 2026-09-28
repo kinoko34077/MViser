@@ -15,7 +15,7 @@ import yaml
 
 PROJECT = Path(__file__).resolve().parents[1]
 CHECKS = PROJECT / "verification" / "manual_checks.yaml"
-STATUS_MARK = {"ok": "x", "ng": " ", "pending": " ", "skip": "x"}
+STATUS_MARK = {"ok": "x", "ng": " ", "pending": " ", "skip": "x", "deferred": " "}
 STATUSES = tuple(STATUS_MARK)
 
 
@@ -63,7 +63,7 @@ def to_markdown(data: dict) -> str:
         lines += [f"- **{c['id']}** — {c['expected'].split(';')[0]}" for c in high]
         lines += ["", "### All checks", ""]
     for c in data["checks"]:
-        tag = {"ng": " **NG**", "skip": " (skipped)"}.get(c["status"], "")
+        tag = {"ng": " **NG**", "skip": " (skipped)", "deferred": " (deferred — frozen until the owner checks)"}.get(c["status"], "")
         lines.append(f"- [{STATUS_MARK[c['status']]}] **{c['id']}** ({c['area']}, from {c.get('from', '-')}){tag}")
         for step in c["steps"]:
             lines.append(f"  - `{step}`" if step.startswith("python") else f"  - {step}")

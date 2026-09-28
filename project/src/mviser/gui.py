@@ -35,6 +35,7 @@ class PreviewApp:
         self._busy = False
         self.audio = AudioPlayer()
         self._audio_clock = False
+        self.clock_faults: list[tuple[int, int]] = []
         self._note = ""
         self.recent = prune_missing(load_recent())
         prefs = self.prefs = load_prefs()
@@ -382,9 +383,17 @@ class PreviewApp:
         if not self.playing or self._play_origin is None:
             return
         start_time, start_frame = self._play_origin
+        wall = start_frame + int((time.perf_counter() - start_time) * self.c.fps)
         target = self.audio.current_frame() if self._audio_clock else None
+        if target is not None and target > wall + self.c.fps // 2:
+            # the audio clock can lag (latency) but never lead real time; a lead means a broken
+            # device clock (MViser#41) — follow the wall clock instead of jumping to the end
+            self.clock_faults.append((wall, target))
+            self._audio_clock = False
+            self._note = "audio clock unreliable; video follows the wall clock"
+            target = None
         if target is None:  # silent playback, or audio finished before the video
-            target = start_frame + int((time.perf_counter() - start_time) * self.c.fps)
+            target = wall
         if target >= self.c.total_frames - 1:
             self.c.seek(self.c.total_frames - 1)
             self.toggle_play()

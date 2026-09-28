@@ -1,7 +1,7 @@
 # Manual verification checklist (canonical). Edit this file, not the Issue:
 #   python project/tools/manual_check.py --markdown   -> paste into the tracking Issue
 # automated_by: audit check that reproduces this without a human; boundary: what only a human can still confirm
-# status: pending | ok | ng | skip   (record details in `result`)
+# status: pending | ok | ng | skip | deferred (frozen, owner checks later)   (record details in `result`)
 schema_version: 1
 tracking_issue: 14
 environment_hint: "Windows 10/11, Python 3.10+ (python.org build with tkinter), after `knt.cmd setup`"
@@ -38,8 +38,8 @@ checks:
     steps:
       - "In the GUI press Space to play; press M to mute / unmute"
     expected: "Click track is audible and the chord changes land on the accented clicks; no status warning about audio"
-    status: pending
-    result: ""
+    status: ok
+    result: "2026-09-28 owner Windows: audible; audit gui-audio PASS (ratio 0.85)"
   - id: gui-export
     automated_by: "mviser audit --only gui-export"
     area: gui
@@ -129,8 +129,8 @@ checks:
       - "AviUtl: drag sample.exo onto the exedit timeline (L-SMASH Works input plugin needed for .mov)"
       - "After Effects: File → Scripts → Run Script File… → sample.jsx"
     expected: "AviUtl shows 3 layered video objects + audio with transparency, correct length/fps; AE creates a comp with the layers in order and audio. If exedit rejects keys, note which (templates in project/src/mviser/templates/ are edited)"
-    status: pending
-    result: ""
+    status: ng
+    result: "2026-09-28 owner: .exo opens, but video objects are empty because AviUtl lacks a .mov reader (MViser#42)"
   - id: theme-prefs
     automated_by: "mviser audit --only theme-prefs"
     area: gui
@@ -161,8 +161,8 @@ checks:
       - "Add `imports: [{format: midi, path: <file>.mid, at: \"1:1\"}]` and set project.bpm to the FL tempo"
       - "python project/tools/run_mviser.py inspect <project>"
     expected: "Chords are split where the harmony changes; strums are merged; names look right (tune `window` / `min_duration` if not)"
-    status: pending
-    result: ""
+    status: deferred
+    result: "frozen by owner 2026-09-28; checked later"
   - id: aviutl-ae
     automated_by: "mviser audit --only aviutl-ae"
     boundary: "the AviUtl / AE import dialogs themselves"
@@ -172,5 +172,5 @@ checks:
       - "python project/tools/run_mviser.py render project/samples/sample.mvproj.yaml --frames project/output/frames --start 0 --end 4"
       - "Import the PNG sequence into AviUtl and/or After Effects"
     expected: "Sequence imports at the project fps with correct length"
-    status: pending
-    result: ""
+    status: deferred
+    result: "frozen by owner 2026-09-28; checked later"

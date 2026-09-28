@@ -173,13 +173,15 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--layers", default=",".join(LAYERS), help="subset of background,chords,lyrics (MViser#23)")
     p.add_argument("--split-layers", action="store_true", help="one output per layer (_<layer> suffix, no audio)")
     p.add_argument("--format", choices=sorted(FORMATS), default="mp4",
-                   help="mp4 (opaque) | prores4444 (.mov, alpha) | webm (VP9, alpha)")
+                   help="mp4 (opaque) | prores4444 (.mov, alpha) | webm (VP9, alpha) | avi-rgba (uncompressed, alpha)")
     p.set_defaults(func=cmd_render)
     p = sub.add_parser("handoff", help="split layers + AviUtl .exo + After Effects .jsx (MViser#29)")
     p.add_argument("project")
     p.add_argument("-o", "--output", default="output/handoff")
     p.add_argument("--name")
-    p.add_argument("--format", choices=["prores4444", "webm"], default="prores4444")
+    p.add_argument("--format", choices=sorted(k for k, v in FORMATS.items() if v[2]), default="prores4444",
+                   help="prores4444 (.mov; AviUtl needs L-SMASH Works) | webm | avi-rgba (uncompressed, "
+                        "AviUtl reads it natively, very large)")
     p.add_argument("--layers", default=",".join(LAYERS))
     p.add_argument("--exo-template")
     p.add_argument("--jsx-template")

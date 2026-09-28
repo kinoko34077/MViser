@@ -213,8 +213,8 @@ background on the bottom row — plus the audio object) and `<name>.jsx` (After 
 duration, layers imported bottom → top, audio). Both come from templates in `project/src/mviser/templates/`
 (`aviutl.exo.tmpl`, `aviutl_video_object.tmpl`, `aviutl_audio_object.tmpl`, `after_effects.jsx.tmpl`); exedit keys are
 unverified until MViser#14 `handoff`, and are fixed by editing the templates.
-AviUtl without an input plugin cannot read `.mov` (MViser#42): either install L-SMASH Works (recommended; keeps
-ProRes files small) or use `--format avi-rgba` (uncompressed 32-bit AVI, read natively, ~110 MB/s at 720p30).
+AviUtl without an input plugin cannot read `.mov` (MViser#42): install L-SMASH Works (project default, owner decision in MViser#42; keeps
+ProRes files small), or without plugins use `--format avi-rgba` (uncompressed 32-bit AVI, read natively, ~110 MB/s at 720p30).
 
 Integrated panels (MViser#33): the main window is a horizontal split — preview / timeline / transport on the left,
 a side notebook on the right with **Subtitles** (the subtitle editor, docked) and **Chords** (time, chord, roman,

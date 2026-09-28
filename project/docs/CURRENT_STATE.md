@@ -43,8 +43,9 @@ Windows pwsh / Windows PowerShell 5.1; `knt doctor` OK. Version 0.2.0.
 | #4 #6 #8 #10 #12 #16 #18 #19 #20 #23 #25 #27 #31 #33 #35 | done (closed by their PRs) |
 | #29 editor handoff | done (closed by PR #30); exedit keys are confirmed via #14 `handoff` |
 | #14 manual verification | open — 12 of 16 automated; gui-audio ok (owner 2026-09-28); handoff ng → #42; midi-fl / aviutl-ae deferred (frozen, owner checks later) |
-| #41 GUI playback jump with real audio (Windows) | guard + trace added; root cause waits on the local-run request in #41 |
-| #42 AviUtl cannot read .mov handoff | `--format avi-rgba` added (native AviUtl read, very large) or install L-SMASH Works; waits on owner re-check |
+| #41 GUI playback jump with real audio (Windows) | guard + trace added; root cause waits on the local-run request (#45) |
+| #45 local check request (Codex etc.) | open — tasks for #41 / #42 on the owner's Windows PC |
+| #42 AviUtl cannot read .mov handoff | owner chose L-SMASH Works + .mov default (avi-rgba kept as option); re-check requested in #45 |
 | #38 automated audit | `mviser audit` + workflow *MViser audit* (ADR 0005, `REVIEW_PROTOCOL.md`) |
 
 ## Known issues / constraints

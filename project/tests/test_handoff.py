@@ -57,8 +57,9 @@ class HandoffTests(unittest.TestCase):
 
         import json
         literal = json.dumps(title)
-        self.assertIn(f"addComp({literal}, 64, 36, 1.0, 1.000000, 10)", text)
-        self.assertIn(f'"MViser import: " + {literal}', text)
+        encoded = literal[1:-1]
+        self.assertIn(f'addComp("{encoded}", 64, 36, 1.0, 1.000000, 10)', text)
+        self.assertIn(f'beginUndoGroup("MViser import: {encoded}")', text)
         self.assertNotIn('Line 1\n"quoted"', text)
 
     def test_exo_unencodable_media_path_fails_closed(self):

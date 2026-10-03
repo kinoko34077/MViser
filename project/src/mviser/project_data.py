@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import copy
+import unicodedata
 import wave
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Any
 
 import yaml
@@ -130,6 +131,31 @@ SET_STYLE_KEYS = ("lyric_font_size", "ruby_scale", "ruby_align", "vertical", "ly
                   "side_text")
 
 
+_WINDOWS_INVALID_LEAF_CHARS = frozenset('<>:"/\\|?*')
+_WINDOWS_RESERVED_LEAFS = frozenset(
+    {"CON", "PRN", "AUX", "NUL"}
+    | {f"COM{i}" for i in range(1, 10)}
+    | {f"LPT{i}" for i in range(1, 10)}
+)
+
+
+def _validate_subtitle_set_name(value: Any, where: str) -> tuple[str, str]:
+    """Return the original display name and a deterministic cross-platform output key."""
+    if not isinstance(value, str) or not value:
+        raise ProjectError(f"{where}.name must be a non-empty string")
+    if value in {".", ".."} or value != value.rstrip(" ."):
+        raise ProjectError(f"{where}.name must be a safe single filesystem leaf")
+    if any(ord(ch) < 32 or ch in _WINDOWS_INVALID_LEAF_CHARS for ch in value):
+        raise ProjectError(f"{where}.name must be a safe single filesystem leaf")
+    win_path = PureWindowsPath(value)
+    if win_path.drive or win_path.root:
+        raise ProjectError(f"{where}.name must be a safe single filesystem leaf")
+    if value.split(".", 1)[0].upper() in _WINDOWS_RESERVED_LEAFS:
+        raise ProjectError(f"{where}.name must be a safe single filesystem leaf")
+    output_key = unicodedata.normalize("NFC", value).casefold()
+    return value, output_key
+
+
 def _select_subtitle_set(doc: dict[str, Any], requested: str | None) -> None:
     """Fold the active subtitle set into `lyrics` + `style` (MViser#8)."""
     sets = list(doc.pop("subtitle_sets", None) or [])
@@ -138,13 +164,21 @@ def _select_subtitle_set(doc: dict[str, Any], requested: str | None) -> None:
         sets.insert(0, {"name": "default", "lyrics": doc["lyrics"]})
         offset = 1
     names = []
+    output_keys: dict[str, str] = {}
     for index, item in enumerate(sets):
         i = index - offset  # position in the user's `subtitle_sets` list
-        if not isinstance(item, dict) or not item.get("name") or not isinstance(item.get("lyrics", []), list):
+        if not isinstance(item, dict) or not isinstance(item.get("lyrics", []), list):
             raise ProjectError(f"subtitle_sets[{i}]: needs 'name' and a 'lyrics' list")
-        if item["name"] in names:
-            raise ProjectError(f"subtitle_sets[{i}]: duplicate name {item['name']!r}")
-        names.append(item["name"])
+        name, output_key = _validate_subtitle_set_name(item.get("name"), f"subtitle_sets[{i}]")
+        if name in names:
+            raise ProjectError(f"subtitle_sets[{i}]: duplicate name {name!r}")
+        previous = output_keys.get(output_key)
+        if previous is not None:
+            raise ProjectError(
+                f"subtitle_sets[{i}].name: output name collision with {previous!r}"
+            )
+        names.append(name)
+        output_keys[output_key] = name
         for key in item.get("style") or {}:
             if key not in SET_STYLE_KEYS:
                 raise ProjectError(f"subtitle_sets[{i}].style.{key}: not a lyric setting (allowed: {SET_STYLE_KEYS})")

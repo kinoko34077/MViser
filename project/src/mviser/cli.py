@@ -63,7 +63,19 @@ def _suffixed(path: str, name: str | None) -> str:
     if name is None:
         return path
     p = Path(path)
-    return str(p.with_name(f"{p.stem}_{name}{p.suffix}")) if p.suffix else str(p / name)
+    if p.suffix:
+        return str(p.with_name(f"{p.stem}_{name}{p.suffix}"))
+
+    candidate = p / name
+    root = p.resolve()
+    resolved = candidate.resolve()
+    try:
+        resolved.relative_to(root)
+    except ValueError as exc:
+        raise ProjectError(f"subtitle-set output escapes --frames root: {name!r}") from exc
+    if resolved == root:
+        raise ProjectError(f"subtitle-set output must be below --frames root: {name!r}")
+    return str(candidate)
 
 
 def _layer_sets(args) -> list[tuple[tuple[str, ...], str | None]]:

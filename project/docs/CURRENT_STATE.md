@@ -26,6 +26,7 @@ Last verified: 2026-09-29 — MViser#40 durable-YAML persistence repair accepted
 
 **Output**
 - MP4 with audio, PNG sequence, range export (#2); alpha layers: RGBA PNG / ProRes 4444 / WebM, split layers (#23).
+- Multi-subtitle-set frame export validates subtitle names as collision-safe single filesystem leaves and resolve-checks each output directory below the selected `--frames` root (#50).
 - Editor handoff: AviUtl `.exo` + After Effects `.jsx` from editable templates (#29; exedit keys unverified).
 
 **GUI** (ADR 0004)
@@ -53,6 +54,7 @@ Last verified: 2026-09-29 — MViser#40 durable-YAML persistence repair accepted
 | #42 AviUtl cannot read .mov handoff | owner chose L-SMASH Works + .mov default (avi-rgba kept as option); re-check requested in #45 |
 | #38 automated audit | `mviser audit` + workflow *MViser audit* (ADR 0005, `REVIEW_PROTOCOL.md`) |
 | #40 durable YAML persistence | done — shared staged/fsync/atomic replacement path with deterministic failure-injection tests |
+| #50 subtitle-set frame output containment | done in accepted implementation — unsafe/colliding output names fail closed before frame publication |
 
 ## Known issues / constraints
 

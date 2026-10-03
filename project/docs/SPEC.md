@@ -221,6 +221,10 @@ duration, layers imported bottom → top, audio). Both come from templates in `p
 unverified until MViser#14 `handoff`, and are fixed by editing the templates.
 AviUtl without an input plugin cannot read `.mov` (MViser#42): install L-SMASH Works (project default, owner decision in MViser#42; keeps
 ProRes files small), or without plugins use `--format avi-rgba` (uncompressed 32-bit AVI, read natively, ~110 MB/s at 720p30).
+JSX string values are serialized with JSON/JavaScript escaping while preserving the editable `{title_js}` template contract.
+EXO publication is strict CP932: any resolved media/audio path or generated EXO text that cannot be represented in CP932 fails with
+`HandoffError`; characters are never silently replaced with `?`. This deterministic serialization check does not satisfy the separate
+physical AviUtl/After Effects acceptance gate (#42/#45).
 
 Integrated panels (MViser#33): the main window is a horizontal split — preview / timeline / transport on the left,
 a side notebook on the right with **Subtitles** (the subtitle editor, docked) and **Chords** (time, chord, roman,

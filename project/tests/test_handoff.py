@@ -1,9 +1,11 @@
 import contextlib
+import copy
 import io
 import shutil
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import yaml
 
@@ -45,6 +47,26 @@ class HandoffTests(unittest.TestCase):
         self.assertIn('addComp("Test \\"Song\\"", 64, 36, 1.0, 1.000000, 10)', text)
         self.assertIn((self.dir / "b.mov").resolve().as_posix(), text)
         self.assertIn("for (var i = 0; i < files.length; i++) {", text)  # JS braces untouched
+
+    def test_jsx_title_uses_lossless_javascript_string_literal(self):
+        project = copy.deepcopy(self.project)
+        title = 'Line 1\\n"quoted" \\\\ tab\\t emoji 😀'
+        project.doc["project"]["title"] = title
+
+        text = build_jsx(project, [self.dir / "b.mov"], None)
+
+        import json
+        literal = json.dumps(title)
+        encoded = literal[1:-1]
+        self.assertIn(f'addComp("{encoded}", 64, 36, 1.0, 1.000000, 10)', text)
+        self.assertIn(f'beginUndoGroup("MViser import: {encoded}")', text)
+        self.assertNotIn('Line 1\n"quoted"', text)
+
+    def test_exo_unencodable_media_path_fails_closed(self):
+        out = self.dir / "handoff_😀"
+        with patch("mviser.handoff.write_video"):
+            with self.assertRaisesRegex(HandoffError, "CP932"):
+                handoff(self.project, out, "song", "webm", ("lyrics",))
 
     def test_template_override_and_errors(self):
         custom = self.dir / "custom.exo"

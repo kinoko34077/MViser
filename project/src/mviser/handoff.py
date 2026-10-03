@@ -68,7 +68,8 @@ def build_jsx(project: CompiledProject, layer_files: list[Path], audio_file: Pat
                     f"{json.dumps(audio_file.resolve().as_posix())}))));")
     text = _read(template, "after_effects.jsx.tmpl")
     # The JSX template contains JS braces; only our {placeholders} are substituted.
-    values = {"title_js": title.replace("\\", "\\\\").replace('"', '\\"'), "width": width, "height": height,
+    title_literal = json.dumps(title)
+    values = {"title_js": title_literal[1:-1], "width": width, "height": height,
               "duration": f"{project.total_frames / project.fps:.6f}", "fps": project.fps,
               "files_js": files_js, "audio_js": audio_js}
     return _safe_substitute(text, values)
@@ -86,6 +87,25 @@ def _safe_substitute(text: str, values: dict) -> str:
     return out
 
 
+def _ensure_exo_path_cp932(path: Path) -> None:
+    resolved = str(Path(path).resolve())
+    try:
+        resolved.encode("cp932")
+    except UnicodeEncodeError as exc:
+        raise HandoffError(f"AviUtl EXO path is not representable in CP932: {resolved}") from exc
+
+
+def _encode_exo_cp932(text: str) -> bytes:
+    normalized = text.replace("\n", "\r\n")
+    try:
+        return normalized.encode("cp932")
+    except UnicodeEncodeError as exc:
+        fragment = normalized[exc.start:exc.end]
+        raise HandoffError(
+            f"AviUtl EXO text is not representable in CP932: {fragment!r}"
+        ) from exc
+
+
 def handoff(project: CompiledProject, out_dir: Path, name: str, fmt: str = "prores4444",
             layers: tuple[str, ...] = LAYERS, exo_template: Path | None = None,
             jsx_template: Path | None = None, progress=None) -> dict[str, Path]:
@@ -101,9 +121,12 @@ def handoff(project: CompiledProject, out_dir: Path, name: str, fmt: str = "pror
         write_video(project, path, full, with_audio=False, progress=progress, layers=(layer,), fmt=fmt)
         layer_files.append(path)
     audio = project.audio_path if project.audio_path and project.audio_path.exists() else None
+    for path in layer_files:
+        _ensure_exo_path_cp932(path)
+    if audio is not None:
+        _ensure_exo_path_cp932(audio)
     exo = out_dir / f"{name}.exo"
-    exo.write_bytes(build_exo(project, layer_files, audio, exo_template)
-                    .replace("\n", "\r\n").encode("cp932", errors="replace"))
+    exo.write_bytes(_encode_exo_cp932(build_exo(project, layer_files, audio, exo_template)))
     jsx = out_dir / f"{name}.jsx"
     jsx.write_text(build_jsx(project, layer_files, audio, jsx_template), encoding="utf-8")
     result = {f"layer_{layer}": path for layer, path in zip(layers, layer_files)}

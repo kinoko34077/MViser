@@ -60,6 +60,36 @@ class SubtitleSetTests(unittest.TestCase):
         with self.assertRaises(ProjectError):
             build(dup)
 
+    def test_subtitle_set_names_are_safe_cross_platform_output_leafs(self):
+        bad_names = [
+            123,
+            "../../outside",
+            "/absolute",
+            r"C:\\outside",
+            ".",
+            "..",
+            "nested/name",
+            r"nested\\name",
+            "bad:name",
+        ]
+        for name in bad_names:
+            with self.subTest(name=name):
+                raw = dict(RAW, lyrics=[], subtitle_sets=[{"name": name, "lyrics": []}])
+                with self.assertRaises(ProjectError):
+                    build(raw)
+
+    def test_subtitle_output_keys_reject_cross_platform_collisions(self):
+        raw = dict(
+            RAW,
+            lyrics=[],
+            subtitle_sets=[
+                {"name": "Mix", "lyrics": []},
+                {"name": "mix", "lyrics": []},
+            ],
+        )
+        with self.assertRaisesRegex(ProjectError, "output.*collision"):
+            build(raw)
+
     def test_no_lyrics_at_all(self):
         project = build({"chords": [{"at": 0, "chord": "C"}]})
         self.assertEqual(project.doc["subtitle_sets"], [])
@@ -83,6 +113,59 @@ class CliTests(unittest.TestCase):
         data = json.loads(out)
         self.assertEqual((code, data["active_subtitle_set"], data["subtitle_sets"]), (0, "en", ["default", "en", "tate"]))
         self.assertEqual(self.run_cli("inspect", str(self.path), "--subtitle-set", "fr")[0], 2)
+
+    def test_render_all_sets_rejects_escape_before_writing_frames(self):
+        unsafe = dict(
+            RAW,
+            lyrics=[],
+            subtitle_sets=[{"name": "../escaped", "lyrics": [{"at": 0, "text": "unsafe"}]}],
+        )
+        self.path.write_text(yaml.safe_dump(unsafe, allow_unicode=True), encoding="utf-8")
+        frames_root = self.dir / "frames"
+        escaped = self.dir / "escaped"
+
+        code, _out = self.run_cli(
+            "render",
+            str(self.path),
+            "--frames",
+            str(frames_root),
+            "--start",
+            "0",
+            "--end",
+            "0.1",
+            "--all-subtitle-sets",
+        )
+
+        self.assertEqual(code, 2)
+        self.assertFalse(escaped.exists())
+
+    def test_render_all_sets_keeps_safe_japanese_names(self):
+        japanese = dict(
+            RAW,
+            lyrics=[],
+            subtitle_sets=[
+                {"name": "日本語", "lyrics": [{"at": 0, "text": "夢"}]},
+                {"name": "英語", "lyrics": [{"at": 0, "text": "Dream"}]},
+            ],
+        )
+        self.path.write_text(yaml.safe_dump(japanese, allow_unicode=True), encoding="utf-8")
+        frames_root = self.dir / "frames"
+
+        code, _out = self.run_cli(
+            "render",
+            str(self.path),
+            "--frames",
+            str(frames_root),
+            "--start",
+            "0",
+            "--end",
+            "0.1",
+            "--all-subtitle-sets",
+        )
+
+        self.assertEqual(code, 0)
+        for name in ("日本語", "英語"):
+            self.assertEqual(len(list((frames_root / name).glob("*.png"))), 3)
 
     def test_render_all_sets_to_frame_dirs(self):
         code, out = self.run_cli("render", str(self.path), "--frames", str(self.dir / "frames"),

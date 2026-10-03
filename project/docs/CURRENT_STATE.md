@@ -1,8 +1,9 @@
 # Current State
 
-Last verified: 2026-09-29 — MViser#40 durable-YAML persistence repair accepted via reviewed PR #47 head
-`ff552ea2c90acfa779a029d45ebd6f1508cec389`, squash-merged as accepted main
-`391e4d373014dc20c38f0db673282c150b073c27`; post-main Verify run #83 and MViser audit run #18 are SUCCESS. Version 0.2.0. #41/#42/#45 remain unresolved owner-visible Windows/AviUtl boundaries.
+Last verified: 2026-10-03 — accepted main `39680485d437cb278a4e117e87ce1ac28a9bb06b` includes
+MViser#50 subtitle-set frame-output containment and MViser#51 lossless/fail-closed handoff serialization.
+Post-main Verify `37116551150` and MViser audit `37116551140` are SUCCESS. Version 0.2.0.
+#49 remains an explicit path-authority contract choice; #41/#42/#45 remain unresolved owner-visible Windows/AviUtl boundaries.
 
 ## Implemented (by area)
 
@@ -27,7 +28,7 @@ Last verified: 2026-09-29 — MViser#40 durable-YAML persistence repair accepted
 **Output**
 - MP4 with audio, PNG sequence, range export (#2); alpha layers: RGBA PNG / ProRes 4444 / WebM, split layers (#23).
 - Multi-subtitle-set frame export validates subtitle names as collision-safe single filesystem leaves and resolve-checks each output directory below the selected `--frames` root (#50).
-- Editor handoff: AviUtl `.exo` + After Effects `.jsx` from editable templates (#29; exedit keys unverified).
+- Editor handoff: AviUtl `.exo` + After Effects `.jsx` from editable templates (#29; exedit keys unverified); JSX title strings use JSON/JavaScript escaping and EXO CP932 publication fails closed instead of replacing unrepresentable path/text characters (#51).
 
 **GUI** (ADR 0004)
 - Preview, timeline (chords / lyrics / waveform / beat grid), audio-synced playback with silent fallback (#10, #12, #18).
@@ -54,7 +55,9 @@ Last verified: 2026-09-29 — MViser#40 durable-YAML persistence repair accepted
 | #42 AviUtl cannot read .mov handoff | owner chose L-SMASH Works + .mov default (avi-rgba kept as option); re-check requested in #45 |
 | #38 automated audit | `mviser audit` + workflow *MViser audit* (ADR 0005, `REVIEW_PROTOCOL.md`) |
 | #40 durable YAML persistence | done — shared staged/fsync/atomic replacement path with deterministic failure-injection tests |
+| #49 project asset path authority | open — explicit contained-only vs authorized-external contract choice required before implementation |
 | #50 subtitle-set frame output containment | done in accepted implementation — unsafe/colliding output names fail closed before frame publication |
+| #51 handoff serialization | done in accepted implementation — JSX title escaping is lossless and CP932-incompatible EXO references fail as HandoffError; physical #42/#45 gate remains separate |
 
 ## Known issues / constraints
 

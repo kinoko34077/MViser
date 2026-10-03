@@ -1,7 +1,8 @@
 # Current State
 
-Last verified: 2026-09-28 — current tree includes the MViser#40 durable-YAML persistence repair, based on `main`
-`e2f2078`; baseline GitHub Verify / MViser audit are green. Version 0.2.0.
+Last verified: 2026-09-29 — MViser#40 durable-YAML persistence repair accepted via reviewed PR #47 head
+`ff552ea2c90acfa779a029d45ebd6f1508cec389`, squash-merged as accepted main
+`391e4d373014dc20c38f0db673282c150b073c27`; post-main Verify run #83 and MViser audit run #18 are SUCCESS. Version 0.2.0. #41/#42/#45 remain unresolved owner-visible Windows/AviUtl boundaries.
 
 ## Implemented (by area)
 

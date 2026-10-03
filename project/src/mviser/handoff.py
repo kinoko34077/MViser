@@ -68,7 +68,8 @@ def build_jsx(project: CompiledProject, layer_files: list[Path], audio_file: Pat
                     f"{json.dumps(audio_file.resolve().as_posix())}))));")
     text = _read(template, "after_effects.jsx.tmpl")
     # The JSX template contains JS braces; only our {placeholders} are substituted.
-    values = {"title_js": json.dumps(title), "width": width, "height": height,
+    title_literal = json.dumps(title)
+    values = {"title_js": title_literal[1:-1], "width": width, "height": height,
               "duration": f"{project.total_frames / project.fps:.6f}", "fps": project.fps,
               "files_js": files_js, "audio_js": audio_js}
     return _safe_substitute(text, values)

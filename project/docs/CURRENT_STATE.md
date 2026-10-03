@@ -1,6 +1,6 @@
 # Current State
 
-Last verified: 2026-10-03 — accepted main `39680485d437cb278a4e117e87ce1ac28a9bb06b` includes
+Last verified: 2026-10-03 — accepted implementation main `39680485d437cb278a4e117e87ce1ac28a9bb06b` includes
 MViser#50 subtitle-set frame-output containment and MViser#51 lossless/fail-closed handoff serialization.
 Post-main Verify `37116551150` and MViser audit `37116551140` are SUCCESS. Version 0.2.0.
 #49 remains an explicit path-authority contract choice; #41/#42/#45 remain unresolved owner-visible Windows/AviUtl boundaries.

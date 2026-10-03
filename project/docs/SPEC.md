@@ -118,7 +118,7 @@ events:                      # common time-range model
     loop_text: str                     # lyric only: side text instead of the lyric base text
 chords: [{at, chord, ...}]   # shorthand → events(type: chord)
 subtitle_sets:               # MViser#8: same timeline, different lyrics / lyric style
-  - name: str                # unique; legacy top-level `lyrics:` becomes set "default" (first)
+  - name: str                # unique safe filesystem leaf; legacy top-level `lyrics:` becomes set "default" (first)
     lyrics: [{at, text, ...}]
     style: {lyric_font_size, ruby_scale, ruby_align, vertical, lyric_position, font_path, text_color}
 lyrics: [{at, text, ...}]    # shorthand → events(type: lyric)
@@ -157,7 +157,12 @@ and fails open to `UNKNOWN` with the raw pitch set (`display: "?(C-C#-D)"`). `fu
 - Motion / pulse priority: event value → matching rule → `motion.*`. Rule `text_color` applies to the chord label frame (lyrics too).
 - Animations use event-local time; `beat_phase = ((t - offset)/(60/bpm)) % 1`.
 - Only the active subtitle set's lyrics are compiled; chords and timeline are identical across sets.
-  `render --all-subtitle-sets` writes one output per set (`out_<name>.mp4`, `frames/<name>/`).
+  Subtitle-set names remain the human-visible identity but must also be safe single filesystem leaves: non-string,
+  separator/path-semantic, Windows drive/reserved/invalid-leaf, control-character, and trailing-dot/space names are
+  rejected as `ProjectError`. Names whose NFC+casefold output keys collide are rejected deterministically.
+  `render --all-subtitle-sets` writes one output per set (`out_<name>.mp4`, `frames/<name>/`); frame-directory
+  publication additionally resolve-checks that the final set directory remains strictly below the selected
+  `--frames` root before any frame write.
 - Range export (`--start/--end`) seeks audio by `audio.start + start`; PNG files are named by absolute frame number.
 
 ## Exceptions / Fallback

@@ -126,6 +126,18 @@ lyrics: [{at, text, ...}]    # shorthand → events(type: lyric)
 
 `time` = seconds (number) / `"M:B"` or `"M:B.frac"` (1-based, 4/4) / `{measure, beat}`.
 
+### Project resource path authority (MViser#49)
+
+A shared `.mvproj.yaml` is **not** filesystem authority. File paths declared by the project document are project-contained resources:
+
+- `audio.path`;
+- every `imports[].path` (MIDI / `.mcb` and future importers using this contract);
+- project-layer `style.font_path` and `subtitle_sets[].style.font_path`.
+
+These values must be non-empty relative paths. Absolute paths, Windows drive/UNC paths, and relative paths whose normalized/resolved target escapes the directory containing the project file fail closed as `ProjectError`. Existing relative paths that remain inside the project directory keep their current behavior. Resolution follows the host filesystem, so an existing symlink that resolves outside the project directory is also rejected.
+
+User-local **Global settings** are a separate trusted configuration surface rather than data supplied by the shared project document; this project-document containment rule does not reinterpret a Global `style.font_path` as project-owned authority.
+
 ## Chord notations
 
 | notation | value example | notes |

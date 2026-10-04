@@ -246,12 +246,12 @@ def normalize(raw: dict[str, Any], base_dir: Path | str = ".", subtitle_set: str
     # project-declared font path, including inactive subtitle-set overrides,
     # before folding the active subtitle set into the effective style.
     raw_style = raw.get("style")
-    if isinstance(raw_style, dict) and raw_style.get("font_path"):
+    if isinstance(raw_style, dict) and "font_path" in raw_style and raw_style["font_path"] is not None:
         resolve_project_resource(base_dir, raw_style["font_path"], "style.font_path")
     for set_index, item in enumerate(raw.get("subtitle_sets") or []):
         if isinstance(item, dict):
             set_style = item.get("style")
-            if isinstance(set_style, dict) and set_style.get("font_path"):
+            if isinstance(set_style, dict) and "font_path" in set_style and set_style["font_path"] is not None:
                 resolve_project_resource(
                     base_dir,
                     set_style["font_path"],
@@ -275,7 +275,7 @@ def normalize(raw: dict[str, Any], base_dir: Path | str = ".", subtitle_set: str
     if audio is not None:
         if not isinstance(audio, dict):
             raise ProjectError("audio must be a mapping")
-        if audio.get("path"):
+        if "path" in audio and audio["path"] is not None:
             resolve_project_resource(base_dir, audio["path"], "audio.path")
 
     style = doc["style"]

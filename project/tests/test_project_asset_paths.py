@@ -40,8 +40,8 @@ class ProjectAssetPathAuthorityTests(unittest.TestCase):
             with self.subTest(value=value), self.assertRaises(ProjectError):
                 resolve_project_resource(self.root, value, "audio.path")
 
-    def test_project_audio_path_rejects_absolute_and_parent_escape(self):
-        for value in ("/tmp/audio.wav", "../audio.wav", "C:\\audio.wav"):
+    def test_project_audio_path_rejects_empty_absolute_and_parent_escape(self):
+        for value in ("", "/tmp/audio.wav", "../audio.wav", "C:\\audio.wav"):
             with self.subTest(value=value), self.assertRaisesRegex(ProjectError, "audio.path"):
                 normalize({"audio": {"path": value}}, self.root)
 
@@ -52,8 +52,9 @@ class ProjectAssetPathAuthorityTests(unittest.TestCase):
                 normalize(raw, self.root)
 
     def test_project_and_subtitle_font_paths_are_contained(self):
-        with self.assertRaisesRegex(ProjectError, "style.font_path"):
-            normalize({"style": {"font_path": "../outside.ttf"}}, self.root)
+        for value in ("", "../outside.ttf"):
+            with self.subTest(value=value), self.assertRaisesRegex(ProjectError, "style.font_path"):
+                normalize({"style": {"font_path": value}}, self.root)
 
         raw = {
             "subtitle_sets": [{

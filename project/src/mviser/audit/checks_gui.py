@@ -40,6 +40,14 @@ def _pump(root, seconds: float = 0.2) -> None:
         time.sleep(0.01)
 
 
+def _playback_rate(played_frames: int, elapsed_s: float, fps: int) -> tuple[float, bool]:
+    """Return measured playback fps and whether it stays within the existing 0.5x-1.5x audit band."""
+    if elapsed_s <= 0 or fps <= 0:
+        return 0.0, False
+    measured_fps = played_frames / elapsed_s
+    return measured_fps, fps * 0.5 <= measured_fps <= fps * 1.5
+
+
 def _screenshot(root, path: Path) -> str | None:
     try:
         from PIL import ImageGrab
@@ -108,11 +116,17 @@ def gui_basic(ctx: AuditContext) -> CheckResult:
         trace, t0 = [], time.perf_counter()
         while time.perf_counter() - t0 < 1.0:
             app.root.update()
-            trace.append((round(time.perf_counter() - t0, 3), app.c.frame, app.audio.current_frame()))
+            elapsed = time.perf_counter() - t0
+            trace.append((round(elapsed, 3), app.c.frame, app.audio.current_frame()))
+            if elapsed >= 1.0:
+                break
             time.sleep(0.05)
+        observation_elapsed = time.perf_counter() - t0
         played = app.c.frame - seek_frame
+        measured_fps, playback_rate_ok = _playback_rate(played, observation_elapsed, app.c.fps)
         faults = list(app.clock_faults)
-        app.toggle_play()
+        if app.playing:
+            app.toggle_play()
         text = project.read_text(encoding="utf-8")
         project.write_text(text.replace("pulse: 0.04", "pulse: 0.09"), encoding="utf-8")
         os.utime(project, (time.time() + 2, time.time() + 2))
@@ -121,16 +135,20 @@ def gui_basic(ctx: AuditContext) -> CheckResult:
         reloaded = app.c.project.doc["motion"]["pulse"]
         shot = _screenshot(app.root, ctx.artifact("gui_basic.png"))
     expected_mid = app.c.total_frames // 2
-    ok = abs(seek_frame - expected_mid) <= 2 and ":" in readout and 15 <= played <= 45 and reloaded == 0.09 \
+    ok = abs(seek_frame - expected_mid) <= 2 and ":" in readout and playback_rate_ok and reloaded == 0.09 \
         and not faults
     return CheckResult("gui-basic", PASS if ok else FAIL,
-                       f"seek→f{seek_frame}, readout '{readout[:40]}…', +{played} frames in 1 s, reload pulse={reloaded}",
+                       f"seek→f{seek_frame}, readout '{readout[:40]}…', +{played} frames in "
+                       f"{observation_elapsed:.2f} s ({measured_fps:.1f} fps), reload pulse={reloaded}",
                        values={"seek_frame": seek_frame, "expected_frame": expected_mid, "readout": readout,
-                               "frames_played_1s": played, "reloaded_pulse": reloaded,
-                               "audio_driven": audio_driven, "audio_clock_faults": faults,
-                               "trace_s_frame_audioframe": trace[::2]},
+                               "frames_played_observation": played,
+                               "observation_elapsed_s": round(observation_elapsed, 3),
+                               "observed_playback_fps": round(measured_fps, 3),
+                               "reloaded_pulse": reloaded, "audio_driven": audio_driven,
+                               "audio_clock_faults": faults, "trace_s_frame_audioframe": trace[::2]},
                        rule="timeline click at 50 % seeks to the middle frame (±2); readout shows time; playback "
-                            "(audio or wall clock) never leads real time; advances 15–45 frames per second of wall time; saved YAML change is picked up by polling",
+                            "(audio or wall clock) never leads real time; measured playback rate stays within "
+                            "0.5x–1.5x project fps using actual observation wall time; saved YAML change is picked up by polling",
                        artifacts=[ctx.rel(Path(shot))] if shot else [])
 
 

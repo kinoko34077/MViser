@@ -1,9 +1,10 @@
 # Current State
 
-Last verified: 2026-10-05 — accepted implementation main `81242835481e0c5ac92ef66fdb2a7a367d5eb299` includes
-MViser#49 project-resource path containment, MViser#50 subtitle-set frame-output containment and MViser#51 lossless/fail-closed handoff serialization.
-Post-main Verify `37264870786` and MViser audit `37264870765` are SUCCESS. Version 0.2.0.
-#49 is complete; #41/#42/#45 remain unresolved owner-visible Windows/AviUtl boundaries.
+Last verified: 2026-10-06 — accepted implementation main `549e886a632c7e9abb5e97ad6a46263b84528681` includes
+MViser#49 project-resource path containment, MViser#50 subtitle-set frame-output containment,
+MViser#51 lossless/fail-closed handoff serialization, and MViser#59/#60 corrected gui-basic elapsed-time measurement.
+PR #60 exact-head Verify `37383101691` and MViser audit `37383101685` are SUCCESS. Version 0.2.0.
+#41 remains open only for corrected owner-Windows playback acceptance; #42/#45 remain owner-visible Windows/AviUtl boundaries.
 
 ## Implemented (by area)
 
@@ -51,14 +52,15 @@ Post-main Verify `37264870786` and MViser audit `37264870765` are SUCCESS. Versi
 | #4 #6 #8 #10 #12 #16 #18 #19 #20 #23 #25 #27 #31 #33 #35 | done (closed by their PRs) |
 | #29 editor handoff | done (closed by PR #30); exedit keys are confirmed via #14 `handoff` |
 | #14 manual verification | open — 12 of 16 automated; gui-audio ok (owner 2026-09-28); handoff ng → #42; midi-fl / aviutl-ae deferred (frozen, owner checks later) |
-| #41 GUI playback jump with real audio (Windows) | guard + trace added; root cause waits on the local-run request (#45) |
-| #45 local check request (Codex etc.) | open — tasks for #41 / #42 on the owner's Windows PC |
+| #41 GUI playback jump with real audio (Windows) | #60 repaired the audit's fixed-1-second assumption after the owner trace first returned at 7.528 s; corrected owner-Windows rerun is requested in #45 before deciding whether any runtime/audio defect remains |
+| #45 local check request (Codex etc.) | open — Task 1 is now one corrected #41 gui-basic/gui-audio rerun on current main; Task 2 remains the #42 AviUtl/L-SMASH timeline check |
 | #42 AviUtl cannot read .mov handoff | owner chose L-SMASH Works + .mov default (avi-rgba kept as option); re-check requested in #45 |
 | #38 automated audit | `mviser audit` + workflow *MViser audit* (ADR 0005, `REVIEW_PROTOCOL.md`) |
 | #40 durable YAML persistence | done — shared staged/fsync/atomic replacement path with deterministic failure-injection tests |
 | #49 project asset path authority | done — shared project audio/import/project-font/subtitle-font paths are project-contained; absolute/rooted/drive/UNC/escaping references fail closed; Global font settings remain separate |
 | #50 subtitle-set frame output containment | done in accepted implementation — unsafe/colliding output names fail closed before frame publication |
 | #51 handoff serialization | done in accepted implementation — JSX title escaping is lossless and CP932-incompatible EXO references fail as HandoffError; physical #42/#45 gate remains separate |
+| #59 gui-basic elapsed-time audit repair | done via #60 — playback rate is measured against actual observation wall time and natural end-of-playback no longer restarts the audit |
 
 ## Known issues / constraints
 
@@ -78,6 +80,7 @@ generated into MViser#14. Each check carries `automated_by` (and `boundary` if a
 
 ## Next work
 
-1. Collect MViser#14 results; fix templates / defaults accordingly (a failed `handoff` check reopens work on #29).
-2. Tune MIDI `window` / `min_duration` with real FL Studio exports.
-3. Candidates: chord editing in the GUI, advanced animation, variable tempo / time signatures.
+1. Collect the corrected owner-Windows #41 rerun and the independent #42 AviUtl/L-SMASH timeline result through #45.
+2. Collect remaining MViser#14 deferred hardware results when the owner chooses to run them; fix templates/defaults only if evidence fails.
+3. Tune MIDI `window` / `min_duration` with real FL Studio exports.
+4. Candidates: chord editing in the GUI, advanced animation, variable tempo / time signatures.

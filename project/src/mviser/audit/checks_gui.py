@@ -125,7 +125,8 @@ def gui_basic(ctx: AuditContext) -> CheckResult:
         played = app.c.frame - seek_frame
         measured_fps, playback_rate_ok = _playback_rate(played, observation_elapsed, app.c.fps)
         faults = list(app.clock_faults)
-        app.toggle_play()
+        if app.playing:
+            app.toggle_play()
         text = project.read_text(encoding="utf-8")
         project.write_text(text.replace("pulse: 0.04", "pulse: 0.09"), encoding="utf-8")
         os.utime(project, (time.time() + 2, time.time() + 2))

@@ -66,6 +66,37 @@ class ProjectError(ValueError):
     pass
 
 
+def resolve_project_resource(base_dir: Path | str, value: Any, where: str) -> Path:
+    """Resolve a project-declared file path and fail closed if it escapes the project directory."""
+    if not isinstance(value, str) or not value.strip():
+        raise ProjectError(f"{where}: path must be a non-empty relative string")
+
+    win_path = PureWindowsPath(value)
+    path = Path(value)
+    if path.is_absolute() or win_path.is_absolute() or bool(win_path.drive) or bool(win_path.root):
+        raise ProjectError(f"{where}: absolute/rooted/drive paths are not allowed")
+
+    # Apply the same parent-traversal policy independent of the host OS/path separator.
+    depth = 0
+    for part in value.replace("\\", "/").split("/"):
+        if part in ("", "."):
+            continue
+        if part == "..":
+            if depth == 0:
+                raise ProjectError(f"{where}: path escapes the project directory")
+            depth -= 1
+        else:
+            depth += 1
+
+    root = Path(base_dir).resolve()
+    resolved = (root / path).resolve()
+    try:
+        resolved.relative_to(root)
+    except ValueError as exc:
+        raise ProjectError(f"{where}: path escapes the project directory") from exc
+    return resolved
+
+
 class _Loader(yaml.SafeLoader):
     """SafeLoader without YAML 1.1 base-60 numbers, so unquoted `at: 3:1` stays the string "3:1"."""
 
@@ -210,6 +241,23 @@ def normalize(raw: dict[str, Any], base_dir: Path | str = ".", subtitle_set: str
         base = _merge(base, global_doc)  # built-in -> Global -> Project (MViser#16)
     doc = _merge(base, {k: v for k, v in raw.items() if v is not None})
     doc["schema_version"] = SCHEMA_VERSION
+
+    # Project documents are not filesystem-authority grants. Validate every
+    # project-declared font path, including inactive subtitle-set overrides,
+    # before folding the active subtitle set into the effective style.
+    raw_style = raw.get("style")
+    if isinstance(raw_style, dict) and "font_path" in raw_style and raw_style["font_path"] is not None:
+        resolve_project_resource(base_dir, raw_style["font_path"], "style.font_path")
+    for set_index, item in enumerate(raw.get("subtitle_sets") or []):
+        if isinstance(item, dict):
+            set_style = item.get("style")
+            if isinstance(set_style, dict) and "font_path" in set_style and set_style["font_path"] is not None:
+                resolve_project_resource(
+                    base_dir,
+                    set_style["font_path"],
+                    f"subtitle_sets[{set_index}].style.font_path",
+                )
+
     _select_subtitle_set(doc, subtitle_set)
 
     project = doc["project"]
@@ -222,6 +270,13 @@ def normalize(raw: dict[str, Any], base_dir: Path | str = ".", subtitle_set: str
     project["resolution"] = [width, height]
     if not isinstance(project["fps"], int) or project["fps"] <= 0:
         raise ProjectError("project.fps must be a positive integer")
+
+    audio = doc.get("audio")
+    if audio is not None:
+        if not isinstance(audio, dict):
+            raise ProjectError("audio must be a mapping")
+        if "path" in audio and audio["path"] is not None:
+            resolve_project_resource(base_dir, audio["path"], "audio.path")
 
     style = doc["style"]
     style["background_color"] = _check_color(style["background_color"], "style.background_color")
@@ -262,7 +317,8 @@ def normalize(raw: dict[str, Any], base_dir: Path | str = ".", subtitle_set: str
         try:
             tempo = Tempo(float(doc["project"]["bpm"]), int(doc["project"]["fps"]))
             start = tempo.to_seconds(spec.get("at", "1:1"))
-            imported = IMPORTERS[fmt](Path(base_dir) / spec["path"], spec, start, tempo.beat_sec)
+            import_path = resolve_project_resource(base_dir, spec["path"], f"imports[{j}].path")
+            imported = IMPORTERS[fmt](import_path, spec, start, tempo.beat_sec)
         except (SourceError, TimelineError) as exc:
             raise ProjectError(f"imports[{j}]: {exc}") from exc
         for event in imported:
@@ -319,7 +375,7 @@ class CompiledProject:
         audio = self.doc.get("audio")
         if not audio or not audio.get("path"):
             return None
-        return (self.base_dir / audio["path"]).resolve()
+        return resolve_project_resource(self.base_dir, audio["path"], "audio.path")
 
     @property
     def audio_start(self) -> float:
@@ -387,7 +443,7 @@ def compile_project(doc: dict[str, Any], base_dir: Path | str = ".") -> Compiled
         seconds_total = tempo.to_seconds(duration)
     else:
         audio = doc.get("audio") or {}
-        audio_len = wav_duration(base_dir / audio["path"]) if audio.get("path") else None
+        audio_len = wav_duration(resolve_project_resource(base_dir, audio["path"], "audio.path")) if audio.get("path") else None
         if audio_len is not None:
             seconds_total = max(audio_len - float(audio.get("start", 0.0)), 0.0)
         else:

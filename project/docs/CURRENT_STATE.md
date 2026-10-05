@@ -1,9 +1,9 @@
 # Current State
 
-Last verified: 2026-10-03 — accepted implementation main `39680485d437cb278a4e117e87ce1ac28a9bb06b` includes
-MViser#50 subtitle-set frame-output containment and MViser#51 lossless/fail-closed handoff serialization.
-Post-main Verify `37116551150` and MViser audit `37116551140` are SUCCESS. Version 0.2.0.
-#49 remains an explicit path-authority contract choice; #41/#42/#45 remain unresolved owner-visible Windows/AviUtl boundaries.
+Last verified: 2026-10-05 — accepted implementation main `81242835481e0c5ac92ef66fdb2a7a367d5eb299` includes
+MViser#49 project-resource path containment, MViser#50 subtitle-set frame-output containment and MViser#51 lossless/fail-closed handoff serialization.
+Post-main Verify `37264870786` and MViser audit `37264870765` are SUCCESS. Version 0.2.0.
+#49 is complete; #41/#42/#45 remain unresolved owner-visible Windows/AviUtl boundaries.
 
 ## Implemented (by area)
 
@@ -27,6 +27,7 @@ Post-main Verify `37116551150` and MViser audit `37116551140` are SUCCESS. Versi
 
 **Output**
 - MP4 with audio, PNG sequence, range export (#2); alpha layers: RGBA PNG / ProRes 4444 / WebM, split layers (#23).
+- Shared project documents may reference only project-contained resources for `audio.path`, `imports[].path`, project `style.font_path`, and subtitle-set font paths; absolute/rooted/drive/UNC/escaping paths fail closed while user-local Global font settings remain a separate trusted surface (#49).
 - Multi-subtitle-set frame export validates subtitle names as collision-safe single filesystem leaves and resolve-checks each output directory below the selected `--frames` root (#50).
 - Editor handoff: AviUtl `.exo` + After Effects `.jsx` from editable templates (#29; exedit keys unverified); JSX title strings use JSON/JavaScript escaping and EXO CP932 publication fails closed instead of replacing unrepresentable path/text characters (#51).
 
@@ -55,7 +56,7 @@ Post-main Verify `37116551150` and MViser audit `37116551140` are SUCCESS. Versi
 | #42 AviUtl cannot read .mov handoff | owner chose L-SMASH Works + .mov default (avi-rgba kept as option); re-check requested in #45 |
 | #38 automated audit | `mviser audit` + workflow *MViser audit* (ADR 0005, `REVIEW_PROTOCOL.md`) |
 | #40 durable YAML persistence | done — shared staged/fsync/atomic replacement path with deterministic failure-injection tests |
-| #49 project asset path authority | open — explicit contained-only vs authorized-external contract choice required before implementation |
+| #49 project asset path authority | done — shared project audio/import/project-font/subtitle-font paths are project-contained; absolute/rooted/drive/UNC/escaping references fail closed; Global font settings remain separate |
 | #50 subtitle-set frame output containment | done in accepted implementation — unsafe/colliding output names fail closed before frame publication |
 | #51 handoff serialization | done in accepted implementation — JSX title escaping is lossless and CP932-incompatible EXO references fail as HandoffError; physical #42/#45 gate remains separate |
 

@@ -27,9 +27,11 @@ class ProjectAssetPathAuthorityTests(unittest.TestCase):
             expected,
         )
 
-    def test_absolute_drive_and_parent_escape_fail_closed(self):
+    def test_absolute_drive_rooted_and_parent_escape_fail_closed(self):
         cases = (
             "/tmp/outside.wav",
+            "/assets/song.wav",
+            "\\assets\\song.wav",
             "C:\\outside\\song.wav",
             "\\\\server\\share\\song.wav",
             "../outside.wav",

@@ -9,6 +9,7 @@ import yaml
 import _path  # noqa: F401
 from mviser.audit import CHECKS, AuditContext, CheckResult, run_audit
 from mviser.audit.core import FAIL, PASS, WARN, check, conclusion
+from mviser.audit.checks_gui import _playback_rate
 from mviser.audit.media import onsets
 
 MANUAL = Path(__file__).resolve().parents[1] / "verification" / "manual_checks.yaml"
@@ -44,6 +45,15 @@ class AuditCoreTests(unittest.TestCase):
         report = run_audit(AuditContext(Path(tempfile.mkdtemp()), gui="off"), only=["gui-basic"], echo=lambda *_: None)
         self.assertEqual(report["checks"][0]["status"], WARN)
         self.assertTrue(report["checks"][0]["boundary"])
+
+    def test_gui_playback_rate_uses_actual_elapsed_time(self):
+        measured, ok = _playback_rate(212, 7.528, 30)
+        self.assertAlmostEqual(measured, 28.1615, places=3)
+        self.assertTrue(ok)
+
+        one_second_assumption, ok = _playback_rate(212, 1.0, 30)
+        self.assertEqual(one_second_assumption, 212.0)
+        self.assertFalse(ok)
 
     def test_every_manual_check_is_mapped_to_an_audit_check(self):
         run_audit  # registry import side effect happens inside run_audit; import modules directly

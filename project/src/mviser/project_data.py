@@ -73,8 +73,8 @@ def resolve_project_resource(base_dir: Path | str, value: Any, where: str) -> Pa
 
     win_path = PureWindowsPath(value)
     path = Path(value)
-    if path.is_absolute() or win_path.is_absolute() or bool(win_path.drive):
-        raise ProjectError(f"{where}: absolute/drive paths are not allowed")
+    if path.is_absolute() or win_path.is_absolute() or bool(win_path.drive) or bool(win_path.root):
+        raise ProjectError(f"{where}: absolute/rooted/drive paths are not allowed")
 
     # Apply the same parent-traversal policy independent of the host OS/path separator.
     depth = 0

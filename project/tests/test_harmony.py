@@ -180,6 +180,21 @@ class McbImportTests(unittest.TestCase):
         displays = [e.payload["display"] for e in project.tracks["chord"].events]
         self.assertEqual(displays, ["A", "F", "G"])
 
+    def test_import_mixed_beat_units(self):
+        data = json.loads(json.dumps(MCB))
+        parts = data["payload"]["progression"]["parts"]
+        parts[0].update(beats=3, beatUnit=8)
+        parts[1].update(beats=1, beatUnit=2)
+        parts[2].update(beats=1)
+        parts.append({**parts[0], "beats": 4, "beatUnit": 4})
+        (self.dir / "mixed.mcb").write_text(json.dumps(data), encoding="utf-8")
+        events = import_mcb(self.dir / "mixed.mcb")
+        self.assertEqual([e["at"] for e in events], ["1:1", "1:2.5", "1:4.5", "2:1.5"])
+        raw = {"project": {"bpm": 120, "fps": 40, "key": "C"},
+               "imports": [{"format": "mcb", "path": "mixed.mcb", "at": "1:1"}]}
+        project = compile_project(normalize(raw, self.dir), self.dir)
+        self.assertEqual([e.start_frame for e in project.tracks["chord"].events], [0, 30, 70, 90])
+
     def test_bad_mcb(self):
         (self.dir / "bad.mcb").write_text("{}", encoding="utf-8")
         with self.assertRaises(SourceError):

@@ -68,7 +68,9 @@ def import_mcb(path: Path, spec: dict[str, Any] | None = None, start_seconds: fl
             },
             "label_hint": chord.get("name"),
         })
-        beat += float(part.get("beats", BEATS_PER_MEASURE))
+        # μChordbot stores beats in units of beatUnit; MViser uses quarter notes.
+        beat_unit = min(32.0, max(1.0, float(part.get("beatUnit") or 4)))
+        beat += float(part.get("beats", BEATS_PER_MEASURE)) * 4 / beat_unit
     return events
 
 

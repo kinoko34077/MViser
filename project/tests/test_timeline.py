@@ -45,6 +45,26 @@ class TempoTests(unittest.TestCase):
             with self.subTest(bad=bad), self.assertRaises(TimelineError):
                 tempo.to_seconds(bad)
 
+    def test_seconds_to_frame_rejects_non_finite_cli_times(self):
+        tempo = Tempo(120, 30)
+        for bad in (float("nan"), float("inf"), float("-inf")):
+            with self.subTest(bad=bad), self.assertRaises(TimelineError):
+                tempo.seconds_to_frame(bad)
+        self.assertEqual(tempo.seconds_to_frame(1.0), 30)
+
+    def test_frame_range_rejects_non_finite_seconds(self):
+        from pathlib import Path
+
+        from mviser.project_data import load_project
+        from mviser.video import FrameRange
+
+        sample = Path(__file__).resolve().parents[1] / "samples" / "sample.mvproj.yaml"
+        project = load_project(sample, global_doc={})
+        for start, end in ((float("nan"), 1.0), (0.0, float("inf")), (0.0, float("nan"))):
+            with self.subTest(start=start, end=end), self.assertRaises(ValueError):
+                FrameRange.from_seconds(project, start, end)
+        self.assertEqual(FrameRange.from_seconds(project, 0.0, 1.0).end, 30)
+
     def test_non_finite_project_values_become_project_errors(self):
         import tempfile
         from pathlib import Path

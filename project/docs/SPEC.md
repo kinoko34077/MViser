@@ -126,6 +126,8 @@ lyrics: [{at, text, ...}]    # shorthand → events(type: lyric)
 
 `time` = seconds (number) / `"M:B"` or `"M:B.frac"` (1-based, 4/4) / `{measure, beat}`.
 
+For `.mcb` imports, each progression part uses `beats` in units of `beatUnit` (note denominator). The importer advances the quarter-note timeline by `beats × 4 / beatUnit`; missing, zero or nonnumeric denominators default to 4, and numeric denominators are clamped to 1–32. The project BPM and 4/4 timeline are unchanged.
+
 ### Project resource path authority (MViser#49)
 
 A shared `.mvproj.yaml` is **not** filesystem authority. File paths declared by the project document are project-contained resources:

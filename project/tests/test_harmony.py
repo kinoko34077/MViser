@@ -195,6 +195,18 @@ class McbImportTests(unittest.TestCase):
         project = compile_project(normalize(raw, self.dir), self.dir)
         self.assertEqual([e.start_frame for e in project.tracks["chord"].events], [0, 30, 70, 90])
 
+    def test_import_beat_unit_fallback_and_bounds(self):
+        for value, expected in ((None, "1:3"), (0, "1:3"), ("0", "1:3"),
+                                ("", "1:3"), ("abc", "1:3"), ("NaN", "1:3"),
+                                (8, "1:2"), ("8", "1:2"), (-3, "3:1"),
+                                (100, "1:1.25")):
+            with self.subTest(beat_unit=value):
+                data = json.loads(json.dumps(MCB))
+                data["payload"]["progression"]["parts"][0].update(beats=2, beatUnit=value)
+                path = self.dir / "unit.mcb"
+                path.write_text(json.dumps(data), encoding="utf-8")
+                self.assertEqual(import_mcb(path)[1]["at"], expected)
+
     def test_bad_mcb(self):
         (self.dir / "bad.mcb").write_text("{}", encoding="utf-8")
         with self.assertRaises(SourceError):

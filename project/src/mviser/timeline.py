@@ -68,6 +68,9 @@ class Tempo:
         raise TimelineError(f"invalid time: {at!r}")
 
     def seconds_to_frame(self, seconds: float) -> int:
+        # --start/--end/--time の nan/inf を int 変換の生例外にしない。
+        if not math.isfinite(seconds):
+            raise TimelineError(f"non-finite time: {seconds}")
         return int(round(seconds * self.fps))
 
     def frame_to_seconds(self, frame: int) -> float:

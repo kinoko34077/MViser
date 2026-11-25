@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 SIDES = ("none", "left", "right", "both")
 SIDE_DEFAULTS = {"side": "none", "size": 36, "spacing": 48, "opacity": 0.35, "margin": 0.06,
                  "scroll": 40.0, "vertical": True}
@@ -45,6 +47,8 @@ def validate_side_text(obj: dict, where: str) -> list[str]:
             errors.append(f"{where}.vertical must be true or false")
         elif key != "side" and key != "vertical" and (isinstance(value, bool) or not isinstance(value, (int, float))):
             errors.append(f"{where}.{key} must be a number")
+        elif not math.isfinite(value) and key not in ("side", "vertical"):
+            errors.append(f"{where}.{key} must be a finite number")
         elif key == "opacity" and not 0 <= value <= 1:
             errors.append(f"{where}.opacity must be in 0..1")
         elif key in ("size", "spacing") and value < 0:

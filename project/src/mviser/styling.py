@@ -5,6 +5,8 @@ Pure functions; compiled once per chord event, read by scene resolution.
 
 from __future__ import annotations
 
+import math
+
 from typing import Any
 
 from .harmony import ChordSpec
@@ -52,7 +54,8 @@ def validate_rules(rules: Any, check_color) -> list[dict[str, Any]]:
                 settings[key] = check_color(value, f"{where}.set.{key}")
             elif key == "motion" and value not in PRESETS:
                 raise StyleRuleError(f"{where}.set.motion: must be one of {PRESETS}")
-            elif key == "pulse" and (isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0):
+            elif key == "pulse" and (isinstance(value, bool) or not isinstance(value, (int, float))
+                                     or not math.isfinite(value) or value < 0):
                 raise StyleRuleError(f"{where}.set.pulse: must be a non-negative number")
         out.append({"when": dict(rule["when"]), "set": settings})
     return out

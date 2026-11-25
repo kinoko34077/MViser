@@ -8,6 +8,7 @@ as hand-written events.
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 from typing import Any, Callable
 
@@ -68,7 +69,15 @@ def import_mcb(path: Path, spec: dict[str, Any] | None = None, start_seconds: fl
             },
             "label_hint": chord.get("name"),
         })
-        beat += float(part.get("beats", BEATS_PER_MEASURE))
+        # μChordbot stores beats in units of beatUnit; MViser uses quarter notes.
+        try:
+            beat_unit = float(part.get("beatUnit") or 4)
+        except (TypeError, ValueError):
+            beat_unit = 4.0
+        if not beat_unit or math.isnan(beat_unit):
+            beat_unit = 4.0
+        beat_unit = min(32.0, max(1.0, beat_unit))
+        beat += float(part.get("beats", BEATS_PER_MEASURE)) * 4 / beat_unit
     return events
 
 

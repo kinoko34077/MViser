@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import math
 import unicodedata
 import wave
 from dataclasses import dataclass
@@ -144,6 +145,16 @@ FOLLOW = "follow"  # MViser#27: take the previous lyric event's value
 FOLLOW_KEYS = {"ruby_align": "ruby_align", "vertical": "vertical", "position": "lyric_position"}  # event -> style
 
 
+def _finite_number(value: Any, where: str, *, minimum: float | None = None, positive: bool = False) -> None:
+    """nan/inf は範囲比較をすり抜け、描画時に int 変換で落ちるため設定読込時に拒否する。"""
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+        raise ProjectError(f"{where} must be a finite number")
+    if positive and value <= 0:
+        raise ProjectError(f"{where} must be > 0")
+    if minimum is not None and value < minimum:
+        raise ProjectError(f"{where} must be >= {minimum:g}")
+
+
 def _check_lyric_options(obj: dict[str, Any], where: str) -> None:
     if obj.get("ruby_align") is not None and obj["ruby_align"] not in ALIGNS + (FOLLOW,):
         raise ProjectError(f"{where}.ruby_align must be one of {ALIGNS + (FOLLOW,)}")
@@ -277,6 +288,8 @@ def normalize(raw: dict[str, Any], base_dir: Path | str = ".", subtitle_set: str
             raise ProjectError("audio must be a mapping")
         if "path" in audio and audio["path"] is not None:
             resolve_project_resource(base_dir, audio["path"], "audio.path")
+        if audio.get("start") is not None:
+            _finite_number(audio["start"], "audio.start", minimum=0)
 
     style = doc["style"]
     style["background_color"] = _check_color(style["background_color"], "style.background_color")
@@ -285,6 +298,13 @@ def normalize(raw: dict[str, Any], base_dir: Path | str = ".", subtitle_set: str
         style["chord_colors"][name] = _check_color(color, f"style.chord_colors.{name}")
 
     _check_lyric_options(style, "style")
+    _finite_number(style["chord_font_size"], "style.chord_font_size", positive=True)
+    _finite_number(style["lyric_font_size"], "style.lyric_font_size", positive=True)
+    motion_cfg = doc["motion"]
+    if isinstance(motion_cfg, dict):
+        for key in ("pulse", "enter_duration"):
+            if key in motion_cfg:
+                _finite_number(motion_cfg[key], f"motion.{key}", minimum=0)
     if not isinstance(style["side_text"], dict):
         raise ProjectError("style.side_text must be a mapping")
     errors = validate_side_text(style["side_text"], "style.side_text")
@@ -346,7 +366,7 @@ def normalize(raw: dict[str, Any], base_dir: Path | str = ".", subtitle_set: str
         if "motion" in event and event["motion"] not in PRESETS:
             raise ProjectError(f"events[{i}]: motion must be one of {PRESETS}")
         if "pulse" in event and (isinstance(event["pulse"], bool) or not isinstance(event["pulse"], (int, float))
-                                 or event["pulse"] < 0):
+                                 or not math.isfinite(event["pulse"]) or event["pulse"] < 0):
             raise ProjectError(f"events[{i}]: pulse must be a non-negative number")
     doc["events"] = events
     return doc

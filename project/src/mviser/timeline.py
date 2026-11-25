@@ -7,6 +7,7 @@ compiled to frames here.
 from __future__ import annotations
 
 import bisect
+import math
 import re
 from dataclasses import dataclass, field
 from typing import Any
@@ -27,17 +28,20 @@ class Tempo:
     offset: float = 0.0
 
     def __post_init__(self):
-        if self.bpm <= 0:
-            raise TimelineError("bpm must be positive")
+        # nan は比較をすり抜け、inf は拍長 0 や int 変換の OverflowError になる。
+        if not math.isfinite(self.bpm) or self.bpm <= 0:
+            raise TimelineError("bpm must be a positive finite number")
         if self.fps <= 0:
             raise TimelineError("fps must be positive")
+        if not math.isfinite(self.offset):
+            raise TimelineError("offset must be a finite number")
 
     @property
     def beat_sec(self) -> float:
         return 60.0 / self.bpm
 
     def position_to_seconds(self, measure: int, beat: float) -> float:
-        if measure < 1 or beat < 1:
+        if measure < 1 or not math.isfinite(beat) or beat < 1:
             raise TimelineError(f"measure/beat are 1-based: {measure}:{beat}")
         return self.offset + ((measure - 1) * BEATS_PER_MEASURE + (beat - 1)) * self.beat_sec
 
@@ -46,6 +50,8 @@ class Tempo:
         if isinstance(at, bool):
             raise TimelineError(f"invalid time: {at!r}")
         if isinstance(at, (int, float)):
+            if not math.isfinite(at):
+                raise TimelineError(f"non-finite time: {at}")
             if at < 0:
                 raise TimelineError(f"negative time: {at}")
             return float(at)

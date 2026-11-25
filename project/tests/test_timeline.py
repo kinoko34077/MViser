@@ -35,6 +35,32 @@ class TempoTests(unittest.TestCase):
         with self.assertRaises(TimelineError):
             Tempo(0, 30)
 
+    def test_non_finite_values_are_rejected(self):
+        nan, inf = float("nan"), float("inf")
+        for args in ((nan, 30), (inf, 30), (-inf, 30), (120, 30, nan), (120, 30, inf)):
+            with self.subTest(args=args), self.assertRaises(TimelineError):
+                Tempo(*args)
+        tempo = Tempo(120, 30)
+        for bad in (nan, inf, "nan", "inf", "1e999", {"measure": 1, "beat": nan}):
+            with self.subTest(bad=bad), self.assertRaises(TimelineError):
+                tempo.to_seconds(bad)
+
+    def test_non_finite_project_values_become_project_errors(self):
+        import tempfile
+        from pathlib import Path
+
+        from mviser.project_data import ProjectError, load_project
+
+        sample = Path(__file__).resolve().parents[1] / "samples" / "sample.mvproj.yaml"
+        text = sample.read_text(encoding="utf-8")
+        for old, new in (("bpm: 135", "bpm: .inf"), ("bpm: 135", "bpm: .nan"),
+                         ("offset: 0.0", "offset: .nan"), ("offset: 0.0", "offset: .inf")):
+            with self.subTest(new=new), tempfile.TemporaryDirectory() as tmp:
+                path = Path(tmp) / "p.mvproj.yaml"
+                path.write_text(text.replace(old, new, 1), encoding="utf-8")
+                with self.assertRaises(ProjectError):
+                    load_project(path, global_doc={})
+
     def test_beat_phase(self):
         tempo = Tempo(120, 30, offset=0.1)
         self.assertAlmostEqual(tempo.beat_phase(0.1), 0.0)
